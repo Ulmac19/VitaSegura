@@ -1,0 +1,139 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/RegistroActivity"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F0F0F0"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="30dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Crear Cuenta"
+            android:textSize="36sp"
+            android:textColor="@color/azul_oscuro"
+            android:textStyle="bold"
+            android:layout_marginBottom="20dp" />
+
+        <EditText
+            android:id="@+id/et_nombre"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/edittext_bg"
+            android:hint="Nombre completo"
+            android:paddingStart="15dp"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/et_correo"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/edittext_bg"
+            android:hint="Correo electrónico"
+            android:inputType="textEmailAddress"
+            android:paddingStart="15dp"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/et_password"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/edittext_bg"
+            android:hint="Contraseña"
+            android:inputType="textPassword"
+            android:paddingStart="15dp"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Incluya una mayúscula, una minúscula, un número y un carácter especial"
+            android:textSize="8sp"
+            android:textColor="#716E6E"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="10dp" />
+
+        <EditText
+            android:id="@+id/et_confirm_password"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/edittext_bg"
+            android:hint="Confirmar Contraseña"
+            android:inputType="textPassword"
+            android:paddingStart="15dp"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/et_telefono"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/edittext_bg"
+            android:hint="Teléfono"
+            android:inputType="phone"
+            android:paddingStart="15dp"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Selecciona tu rol:"
+            android:textSize="16sp"
+            android:textColor="@color/azul_oscuro"
+            android:layout_marginBottom="10dp" />
+
+        <RadioGroup
+            android:id="@+id/rg_rol"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="30dp">
+
+            <android.widget.RadioButton
+                android:id="@+id/rb_adulto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Adulto mayor"
+                android:textColor="@color/azul_oscuro"
+                android:textSize="16sp"
+                android:paddingStart="10dp"
+                android:buttonTint="@color/radio_tint_selector" />
+
+            <android.widget.RadioButton
+                android:id="@+id/rb_cuidador"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cuidador/Familiar"
+                android:textColor="@color/azul_oscuro"
+                android:textSize="16sp"
+                android:paddingStart="10dp"
+                android:buttonTint="@color/radio_tint_selector" />
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/btn_crear_cuenta_final"
+            android:layout_width="174dp"
+            android:layout_height="53dp"
+            android:background="@drawable/boton_primario"
+            app:backgroundTint="@null"
+            android:text="Crear Cuenta"
+            android:textColor="@color/blanco"
+            android:textSize="18sp"
+            android:textAllCaps="false" />
+
+    </LinearLayout>
+</ScrollView>
