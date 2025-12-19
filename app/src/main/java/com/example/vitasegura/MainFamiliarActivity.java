@@ -3,6 +3,7 @@ package com.example.vitasegura;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.activity.EdgeToEdge;
@@ -13,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class MainFamiliarActivity extends AppCompatActivity {
     private LinearLayout btnMonitoreo;
+    private ImageView btn_agregar_abuelo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +24,7 @@ public class MainFamiliarActivity extends AppCompatActivity {
 
         // 2. IMPORTANTE: Vincular el ID después de setContentView
         btnMonitoreo = findViewById(R.id.btn_monitoreo);
+        btn_agregar_abuelo = findViewById(R.id.btn_agregar_abuelo);
 
         // 3. Ahora sí, configurar el listener
         if (btnMonitoreo != null) { // Buena práctica para evitar cierres
@@ -33,6 +36,14 @@ public class MainFamiliarActivity extends AppCompatActivity {
                 }
             });
         }
+
+        btn_agregar_abuelo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainFamiliarActivity.this, AgregarAdultoMayor.class);
+                startActivity(intent);
+            }
+        });
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
