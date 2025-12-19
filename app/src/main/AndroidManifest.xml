@@ -12,6 +12,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaSegura">
         <activity
+            android:name=".IngresarCodigoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".RecuperarActivity"
+            android:exported="false" />
+        <activity
             android:name=".LoginActivity"
             android:exported="false" />
         <activity

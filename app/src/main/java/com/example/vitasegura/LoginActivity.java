@@ -1,6 +1,7 @@
 package com.example.vitasegura;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -47,9 +48,8 @@ public class LoginActivity extends AppCompatActivity {
         tvOlvidaste.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Ir a la vista de recuperar contraseña
-                // Intent intent = new Intent(LoginActivity.this, RecuperarActivity.class);
-                // startActivity(intent);
+                Intent intent = new Intent(LoginActivity.this, RecuperarActivity.class);
+                startActivity(intent);
             }
         });
 

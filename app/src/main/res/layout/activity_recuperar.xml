@@ -1,0 +1,68 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F0F0F0"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="30dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Recuperar Contraseña"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:textAlignment="center"
+            android:layout_marginBottom="10dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ingresa tu correo para restablecimiento."
+            android:textColor="@color/azul_oscuro"
+            android:textSize="16sp"
+            android:textAlignment="center"
+            android:layout_marginBottom="10dp" />
+
+        <EditText
+            android:id="@+id/et_recuperar_correo"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="@drawable/edittext_bg"
+            android:hint="Correo electrónico"
+            android:inputType="textEmailAddress"
+            android:paddingStart="15dp"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="14sp"
+            android:layout_marginBottom="10dp" />
+
+        <TextView
+            android:id="@+id/tv_contador_codigo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reintentar envío de código en: 0:00"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="16sp"
+            android:layout_marginBottom="10dp" />
+
+        <android.widget.Button
+            android:id="@+id/btn_enviar_codigo"
+            android:layout_width="174dp"
+            android:layout_height="53dp"
+            android:background="@drawable/boton_primario"
+            app:backgroundTint="@null"
+            android:text="Enviar Código"
+            android:textAllCaps="false"
+            android:textColor="@color/blanco"
+            android:textSize="18sp" />
+
+    </LinearLayout>
+</LinearLayout>
