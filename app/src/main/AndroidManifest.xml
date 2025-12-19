@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaSegura">
         <activity
+            android:name=".InformacionAbueloActivity"
+            android:exported="false" />
+        <activity
             android:name=".MiInformacionActivity"
             android:exported="false" />
         <activity

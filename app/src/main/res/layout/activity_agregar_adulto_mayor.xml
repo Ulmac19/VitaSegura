@@ -6,7 +6,8 @@
     android:background="@color/gris_claro"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:id="@+id/main">
 
     <RelativeLayout
         android:layout_width="match_parent"
