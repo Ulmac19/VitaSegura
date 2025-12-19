@@ -49,7 +49,8 @@ public class MainAdultoActivity extends AppCompatActivity {
 
         // El botón de emergencia podría disparar una alerta directa
         btnEmergencia.setOnClickListener(v -> {
-            // Lógica de alerta inmediata
+            Intent intent = new Intent(MainAdultoActivity.this, AlertaEmergenciaActivity.class);
+            startActivity(intent);
         });
 
 
