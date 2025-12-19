@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaSegura">
         <activity
+            android:name=".MonitoreoSaludActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainAdultoActivity"
             android:exported="false" />
         <activity

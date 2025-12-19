@@ -1,5 +1,6 @@
 package com.example.vitasegura;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -28,8 +29,9 @@ public class MainAdultoActivity extends AppCompatActivity {
 
         // Ejemplo de navegación al módulo de salud
         btnSalud.setOnClickListener(v -> {
-            // Intent intent = new Intent(MainAdultoActivity.this, SaludAdultoActivity.class);
-            // startActivity(intent);
+            Intent intent = new Intent(MainAdultoActivity.this, MonitoreoSaludActivity.class);
+            startActivity(intent);
+
         });
 
         // El botón de emergencia podría disparar una alerta directa
