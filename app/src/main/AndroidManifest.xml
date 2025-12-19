@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaSegura">
         <activity
+            android:name=".MiInformacionActivity"
+            android:exported="false" />
+        <activity
             android:name=".AgregarAdultoMayor"
             android:exported="false" />
         <activity
