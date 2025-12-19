@@ -34,6 +34,14 @@ public class MainAdultoActivity extends AppCompatActivity {
 
         });
 
+        // Ejemplo de navegación al módulo de medicamentos
+        btnMeds.setOnClickListener(v -> {
+            Intent intent = new Intent(MainAdultoActivity.this, MedicamentosAbueloActivity.class);
+            startActivity(intent);
+        });
+
+        // Ejemplo de navegación al módulo de información personal
+
         // El botón de emergencia podría disparar una alerta directa
         btnEmergencia.setOnClickListener(v -> {
             // Lógica de alerta inmediata

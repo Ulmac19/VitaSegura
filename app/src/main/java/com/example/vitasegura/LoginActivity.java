@@ -19,7 +19,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText etCorreo, etPassword;
     private Button btnEntrar;
-    private TextView tvOlvidaste, btnIniciarSesion;
+    private TextView tvOlvidaste, btnIniciarSesion; //btnIniciarSesion para el awelo
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,6 +47,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        //Iniciar sesión con el awelo
         btnIniciarSesion.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
