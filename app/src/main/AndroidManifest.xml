@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaSegura">
         <activity
+            android:name=".CambiarPassActivity"
+            android:exported="false" />
+        <activity
             android:name=".IngresarCodigoActivity"
             android:exported="false" />
         <activity

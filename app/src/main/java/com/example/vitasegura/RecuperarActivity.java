@@ -1,5 +1,6 @@
 package com.example.vitasegura;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -39,6 +40,15 @@ public class RecuperarActivity extends AppCompatActivity {
                     // Aquí integraremos el envío con Firebase después
                     Toast.makeText(RecuperarActivity.this, "Código enviado a " + correo, Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+
+        btnEnviar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // ... (validación de correo)
+                Intent intent = new Intent(RecuperarActivity.this, IngresarCodigoActivity.class);
+                startActivity(intent);
             }
         });
 
