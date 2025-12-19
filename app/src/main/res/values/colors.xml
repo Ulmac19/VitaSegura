@@ -6,4 +6,7 @@
     <color name="azul_claro">#80C7DE</color>
     <color name="azul_oscuro">#23608C</color>
     <color name="gris_claro">#F0F0F0</color>
+    <color name="menta">#7DB9A9</color>
+    <color name="rojo">#FF0000</color>
+    <color name="verde">#34C759</color>
 </resources>
