@@ -1,0 +1,114 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="24dp"
+    android:layout_marginHorizontal="4dp"
+    android:background="@drawable/edittext_bg"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nombre: "
+            android:textColor="@color/azul_claro"
+            android:textSize="16sp" />
+        <TextView
+            android:id="@+id/tv_nombre_med"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Metformina"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Frecuencia: "
+            android:textColor="@color/azul_claro"
+            android:textSize="16sp" />
+        <TextView
+            android:id="@+id/tv_frecuencia_med"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cada 2 días"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hora de toma: "
+            android:textColor="@color/azul_claro"
+            android:textSize="16sp" />
+        <TextView
+            android:id="@+id/tv_hora_med"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="20:00"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dosis: "
+            android:textColor="@color/azul_claro"
+            android:textSize="16sp" />
+        <TextView
+            android:id="@+id/tv_dosis_med"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1 tableta"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Notas: "
+            android:textColor="@color/azul_claro"
+            android:textSize="16sp" />
+        <TextView
+            android:id="@+id/tv_notas_med"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No olvidar tomar con agua"
+            android:textColor="@color/azul_oscuro"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+</LinearLayout>

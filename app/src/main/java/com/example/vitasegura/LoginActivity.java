@@ -19,7 +19,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText etCorreo, etPassword;
     private Button btnEntrar;
-    private TextView tvOlvidaste;
+    private TextView tvOlvidaste, btnIniciarSesion; //btnIniciarSesion para el awelo
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,6 +30,8 @@ public class LoginActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.et_login_password);
         btnEntrar = findViewById(R.id.btn_login_entrar);
         tvOlvidaste = findViewById(R.id.tv_olvidaste_pass);
+        btnIniciarSesion = findViewById(R.id.btn_iniciar_sesion);
+
 
         btnEntrar.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -42,6 +44,15 @@ public class LoginActivity extends AppCompatActivity {
                 } else {
                     // Lógica de autenticación próximamente
                 }
+            }
+        });
+
+        //Iniciar sesión con el awelo
+        btnIniciarSesion.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(LoginActivity.this, MainAdultoActivity.class);
+                startActivity(intent);
             }
         });
 
