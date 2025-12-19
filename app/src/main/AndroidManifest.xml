@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,6 +13,15 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaSegura">
+        <activity
+            android:name=".DialogConfirmarEliminarActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FormularioMedicamentoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MedicamentosCuidadorActivity"
+            android:exported="false" />
         <activity
             android:name=".AlertaEmergenciaActivity"
             android:exported="false" />

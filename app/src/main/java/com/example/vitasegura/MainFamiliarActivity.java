@@ -13,7 +13,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class MainFamiliarActivity extends AppCompatActivity {
-    private LinearLayout btnMonitoreo;
+    private LinearLayout btnMonitoreo, btnMedicamentos;
     private ImageView btn_agregar_abuelo;
 
     @Override
@@ -25,6 +25,7 @@ public class MainFamiliarActivity extends AppCompatActivity {
         // 2. IMPORTANTE: Vincular el ID después de setContentView
         btnMonitoreo = findViewById(R.id.btn_monitoreo);
         btn_agregar_abuelo = findViewById(R.id.btn_agregar_abuelo);
+        btnMedicamentos = findViewById(R.id.btn_medicamentos);
 
         // 3. Ahora sí, configurar el listener
         if (btnMonitoreo != null) { // Buena práctica para evitar cierres
@@ -41,6 +42,14 @@ public class MainFamiliarActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainFamiliarActivity.this, AgregarAdultoMayor.class);
+                startActivity(intent);
+            }
+        });
+
+        btnMedicamentos.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainFamiliarActivity.this, MedicamentosCuidadorActivity.class);
                 startActivity(intent);
             }
         });

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gris_claro"
+    android:padding="20dp">
+
+    <ImageView
+        android:id="@+id/iv_back_meds"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/atras"
+        app:tint="@color/azul_claro" />
+
+    <TextView
+        android:id="@+id/tv_titulo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/iv_back_meds"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="24dp"
+        android:text="Medicamentos de\n[Nombre]"
+        android:textAlignment="center"
+        android:textColor="@color/azul_oscuro"
+        android:textSize="32sp"
+        android:textStyle="bold" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_medicamentos_cuidador"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/btn_agregar_recordatorio"
+        android:layout_below="@id/tv_titulo"
+        android:clipToPadding="false"
+        android:paddingBottom="10dp" />
+
+    <Button
+        android:id="@+id/btn_agregar_recordatorio"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/boton_primario"
+        android:text="Agregar Recordatorio"
+        android:textAllCaps="false"
+        android:textColor="@color/blanco"
+        android:textSize="18sp"
+        app:backgroundTint="@color/azul_oscuro" />
+
+</RelativeLayout>

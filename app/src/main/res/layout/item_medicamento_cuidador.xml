@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="20dp"
+    android:layout_marginHorizontal="4dp"
+    android:background="@drawable/edittext_bg"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:id="@+id/main">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nombre: " android:textColor="@color/azul_claro" android:textSize="16sp" />
+        <TextView android:id="@+id/tv_nombre_med" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Metformina" android:textColor="@color/azul_oscuro" android:textSize="16sp" android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Frecuencia: " android:textColor="@color/azul_claro" android:textSize="16sp" />
+        <TextView android:id="@+id/tv_frecuencia_med" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cada 2 días" android:textColor="@color/azul_oscuro" android:textSize="16sp" android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hora de toma: " android:textColor="@color/azul_claro" android:textSize="16sp" />
+        <TextView android:id="@+id/tv_hora_med" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="20:00" android:textColor="@color/azul_oscuro" android:textSize="16sp" android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="4dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dosis: " android:textColor="@color/azul_claro" android:textSize="16sp" />
+        <TextView android:id="@+id/tv_dosis_med" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1 tableta" android:textColor="@color/azul_oscuro" android:textSize="16sp" android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Notas: " android:textColor="@color/azul_claro" android:textSize="16sp" />
+        <TextView android:id="@+id/tv_notas_med" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="..." android:textColor="@color/azul_oscuro" android:textSize="16sp" android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_editar"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/boton_primario"
+            android:text="Editar"
+            android:textAllCaps="false"
+            android:textColor="@color/blanco"
+            android:textSize="14sp"
+            app:backgroundTint="@color/azul_oscuro" />
+
+        <Button
+            android:id="@+id/btn_eliminar"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="@drawable/boton_secundario"
+            android:text="Eliminar"
+            android:textAllCaps="false"
+            android:textColor="@color/blanco"
+            app:backgroundTint="@color/rojo" />
+    </LinearLayout>
+</LinearLayout>
