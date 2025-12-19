@@ -15,7 +15,6 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnRegistrarse, btnIniciarSesion;
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,8 +31,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnIniciarSesion.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
         });
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
