@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -13,6 +16,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaSegura">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="PON_AQUI_TU_LLAVE_DESPUES" />
+
+        <activity
+            android:name=".UbicacionAdultoActivity"
+            android:exported="false" />
         <activity
             android:name=".DialogConfirmarEliminarActivity"
             android:exported="false" />
