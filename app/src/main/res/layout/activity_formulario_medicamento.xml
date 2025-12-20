@@ -39,11 +39,12 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
+
             <EditText
                 android:id="@+id/et_nombre"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:background="@android:color/transparent"
+                android:background="@color/blanco"
                 android:hint="Nombre del medicamento"
                 android:paddingStart="16dp"
                 android:textColor="@color/azul_oscuro" />
@@ -59,7 +60,7 @@
                 android:id="@+id/et_frecuencia"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:background="@android:color/transparent"
+                android:background="@color/blanco"
                 android:hint="Frecuencia"
                 android:paddingStart="16dp"
                 android:textColor="@color/azul_oscuro" />
@@ -75,7 +76,7 @@
                 android:id="@+id/et_hora"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:background="@android:color/transparent"
+                android:background="@color/blanco"
                 android:hint="Hora de toma"
                 android:paddingStart="16dp"
                 android:textColor="@color/azul_oscuro" />
@@ -91,7 +92,7 @@
                 android:id="@+id/et_dosis"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:background="@android:color/transparent"
+                android:background="@color/blanco"
                 android:hint="Dosis"
                 android:paddingStart="16dp"
                 android:textColor="@color/azul_oscuro" />
@@ -107,7 +108,7 @@
                 android:id="@+id/et_notas"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:background="@android:color/transparent"
+                android:background="@color/blanco"
                 android:hint="Notas"
                 android:paddingStart="16dp"
                 android:textColor="@color/azul_oscuro" />
