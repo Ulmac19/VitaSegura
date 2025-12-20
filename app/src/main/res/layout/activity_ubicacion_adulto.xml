@@ -14,28 +14,28 @@
 
         <ImageView
             android:id="@+id/iv_back_ubicacion"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/atras"
+            android:layout_width="35dp"  android:layout_height="35dp" android:src="@drawable/atras"
             app:tint="@color/azul_claro" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:text="Ubicación de\n[Nombre]"
-            android:textAlignment="center"
-            android:textColor="@color/azul_oscuro"
-            android:textSize="24sp"
-            android:textStyle="bold" />
     </RelativeLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:text="Ubicación de\n[Nombre]"
+        android:textAlignment="center"
+        android:textColor="@color/azul_oscuro"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_gravity="center"/>
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="300dp"
         android:layout_marginHorizontal="20dp"
         app:cardCornerRadius="20dp"
-        app:cardElevation="8dp">
+        app:cardElevation="8dp"
+        android:layout_marginTop="15dp">
 
         <fragment
             android:id="@+id/map_fragment"

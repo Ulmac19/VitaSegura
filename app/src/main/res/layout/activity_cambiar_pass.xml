@@ -3,21 +3,25 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F0F0"
+    android:background="@color/gris_claro"
     android:orientation="vertical">
 
-    <ImageView
-        android:id="@+id/iv_back_cambiar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_margin="16dp"
-        android:src="@drawable/ic_back_arrow"
-        app:tint="@color/azul_claro" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+
+        <ImageView
+            android:id="@+id/iv_back_cambiar"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:src="@drawable/atras"
+            app:tint="@color/azul_claro" />
+    </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
         android:gravity="center"
         android:orientation="vertical"
         android:padding="30dp">
@@ -26,7 +30,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Cambiar\nContraseña"
-            android:textColor="#23608C"
+            android:textColor="@color/azul_oscuro"
             android:textSize="36sp"
             android:textStyle="bold"
             android:textAlignment="center"
@@ -46,7 +50,7 @@
                 android:hint="Contraseña"
                 android:inputType="textPassword"
                 android:paddingStart="15dp"
-                android:textColor="#23608C"
+                android:textColor="@color/azul_oscuro"
                 android:textSize="14sp" />
 
             <TextView
@@ -66,7 +70,7 @@
                 android:hint="Confirmar contraseña"
                 android:inputType="textPassword"
                 android:paddingStart="15dp"
-                android:textColor="#23608C"
+                android:textColor="@color/azul_oscuro"
                 android:textSize="14sp" />
 
         </LinearLayout>

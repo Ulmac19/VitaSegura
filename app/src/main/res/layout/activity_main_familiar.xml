@@ -6,206 +6,214 @@
     android:layout_height="match_parent"
     android:background="@color/gris_claro"
     android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:orientation="vertical">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp">
+        android:padding="20dp">
 
         <ImageView
             android:id="@+id/btn_cerrar_sesion"
-            android:layout_width="45dp"
-            android:layout_height="50dp"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
             android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
             android:src="@drawable/cerrar_sesion"/>
 
         <ImageView
             android:id="@+id/btn_agregar_abuelo"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_alignParentEnd="true"
-            android:padding="2dp"
+            android:layout_centerVertical="true"
             android:src="@drawable/agregar_abuelito"/>
     </RelativeLayout>
 
-    <TextView
-        android:id="@+id/tv_bienvenida_nombre_familiar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Bienvenido,\n[Nombre]"
-        android:textColor="@color/azul_claro"
-        android:textSize="36sp"
-        android:textStyle="bold"
-        android:textAlignment="center" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="¿Qué te gustaría consultar el día de hoy?"
-        android:textColor="@color/azul_oscuro"
-        android:textStyle="bold"
-        android:textSize="24sp"
-        android:textAlignment="center"
-        android:layout_marginBottom="30dp" />
-
     <LinearLayout
-        android:layout_width="360dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="1dp"> <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="140dp"
-        android:orientation="horizontal">
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp">
+
+        <TextView
+            android:id="@+id/tv_bienvenida_nombre_familiar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Bienvenido,\n[Nombre]"
+            android:textAlignment="center"
+            android:textColor="@color/azul_claro"
+            android:textSize="36sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="¿Qué te gustaría consultar el día de hoy?"
+            android:textColor="@color/azul_oscuro"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            android:textAlignment="center"
+            android:layout_marginBottom="30dp" />
 
         <LinearLayout
-            android:id="@+id/btn_monitoreo"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@color/menta"
-            android:gravity="center"
+            android:layout_width="360dp"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginEnd="1dp">
-            <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@drawable/monitoreo" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Monitoreo"
-                android:textColor="@color/black"
-                android:textStyle="bold"
-                android:textSize="18sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/btn_medicamentos"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@color/menta"
-            android:gravity="center"
-            android:orientation="vertical">
-            <ImageView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:src="@drawable/medicamentos_logo" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Medicamentos"
-                android:textStyle="bold"
-                android:textColor="@color/black"
-                android:textSize="18sp" />
-        </LinearLayout>
-    </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="140dp"
-            android:layout_marginTop="1dp"
-            android:orientation="horizontal">
+            android:padding="1dp">
 
             <LinearLayout
-                android:id="@+id/btn_ubicacion"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginEnd="1dp"
-                android:layout_weight="1"
-                android:background="@color/menta"
-                android:gravity="center"
-                android:orientation="vertical">
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:orientation="horizontal">
 
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:src="@drawable/ubicacion" />
+                <LinearLayout
+                    android:id="@+id/btn_monitoreo"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@color/menta"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="1dp">
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/monitoreo" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Monitoreo"
+                        android:textColor="@color/black"
+                        android:textStyle="bold"
+                        android:textSize="18sp" />
+                </LinearLayout>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ubicación"
-                    android:textColor="@color/black"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                <LinearLayout
+                    android:id="@+id/btn_medicamentos"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@color/menta"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/medicamentos_logo" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Medicamentos"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        android:textSize="18sp" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/btn_notificaciones"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@color/menta"
-                android:gravity="center"
-                android:orientation="vertical">
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:src="@drawable/notificacion" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Notificaciones"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:textSize="18sp" />
-            </LinearLayout>
-        </LinearLayout>
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginTop="1dp"
+                android:orientation="horizontal">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="140dp"
-            android:layout_marginTop="1dp"
-            android:orientation="horizontal">
+                <LinearLayout
+                    android:id="@+id/btn_ubicacion"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="1dp"
+                    android:layout_weight="1"
+                    android:background="@color/menta"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/ubicacion" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ubicación"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btn_notificaciones"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@color/menta"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/notificacion" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Notificaciones"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        android:textSize="18sp" />
+                </LinearLayout>
+            </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/btn_usuarios"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@color/menta"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:layout_marginEnd="1dp">
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:src="@drawable/usuarios" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Usuarios"
-                    android:textColor="@color/black"
-                    android:textStyle="bold"
-                    android:textSize="18sp" />
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginTop="1dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/btn_usuarios"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@color/menta"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="1dp">
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/usuarios" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Usuarios"
+                        android:textColor="@color/black"
+                        android:textStyle="bold"
+                        android:textSize="18sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btn_configuracion"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@color/menta"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <ImageView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:src="@drawable/configuracion" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Configuración"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        android:textSize="18sp" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/btn_configuracion"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@color/menta"
-                android:gravity="center"
-                android:orientation="vertical">
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:src="@drawable/configuracion" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Configuración"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:textSize="18sp" />
-            </LinearLayout>
         </LinearLayout>
-
     </LinearLayout>
 </LinearLayout>

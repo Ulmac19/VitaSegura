@@ -5,5 +5,9 @@
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
 
-    <style name="Theme.VitaSegura" parent="Base.Theme.VitaSegura" />
+    <style name="Theme.VitaSegura" parent="Base.Theme.VitaSegura">
+    <item name="android:statusBarColor">@android:color/transparent</item>
+    <item name="android:windowLightStatusBar">true</item>
+    <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 </resources>

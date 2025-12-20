@@ -44,23 +44,25 @@
         <Button
             android:id="@+id/btn_editar"
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_marginEnd="8dp"
             android:background="@drawable/boton_primario"
             android:text="Editar"
             android:textAllCaps="false"
             android:textColor="@color/blanco"
             android:textSize="14sp"
+            android:textAlignment="center"
             app:backgroundTint="@color/azul_oscuro" />
 
         <Button
             android:id="@+id/btn_eliminar"
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:background="@drawable/boton_secundario"
             android:text="Eliminar"
             android:textAllCaps="false"
             android:textColor="@color/blanco"
+            android:textAlignment="center"
             app:backgroundTint="@color/rojo" />
     </LinearLayout>
 </LinearLayout>

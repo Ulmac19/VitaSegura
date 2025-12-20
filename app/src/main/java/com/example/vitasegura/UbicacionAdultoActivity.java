@@ -2,6 +2,9 @@ package com.example.vitasegura;
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,6 +25,7 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
         setContentView(R.layout.activity_ubicacion_adulto);
 
         RecyclerView rvHistorial = findViewById(R.id.rv_historial_ubicacion);
@@ -45,6 +49,13 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
         findViewById(R.id.iv_back_ubicacion).setOnClickListener(v -> finish());
 
         // Aquí después inicializarás el RecyclerView del historial
+
+        // Asegúrate de que este ID (R.id.main) coincida con el android:id del layout raíz en tu XML
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
     }
 
     @Override
