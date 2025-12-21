@@ -1,5 +1,6 @@
 package com.example.vitasegura;
 
+import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
@@ -7,11 +8,14 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import java.util.Calendar;
+import java.util.Locale;
 
 public class FormularioMedicamentoActivity extends AppCompatActivity {
 
@@ -23,9 +27,10 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        androidx.activity.EdgeToEdge.enable(this);
         setContentView(R.layout.activity_formulario_medicamento);
 
-        // 1. Vincular las vistas
+        // Vincular vistas
         tvTitulo = findViewById(R.id.tv_titulo_formulario);
         btnAccion = findViewById(R.id.btn_accion);
         etNombre = findViewById(R.id.et_nombre);
@@ -34,16 +39,16 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         etDosis = findViewById(R.id.et_dosis);
         etNotas = findViewById(R.id.et_notas);
 
-        // 2. Revisar si recibimos datos desde el Adaptador
-        Intent intent = getIntent();
-        if (intent.hasExtra("nombre")) {
-            esEdicion = true;
+        // Listeners para selectores
+        etFrecuencia.setOnClickListener(v -> configurarFrecuencia());
+        etHora.setOnClickListener(v -> mostrarReloj());
 
-            // Cambiar textos según tu maquetado
+        // Manejo de edición o nuevo
+        Intent intent = getIntent();
+        if (intent != null && intent.hasExtra("nombre")) {
+            esEdicion = true;
             tvTitulo.setText("Editar\nRecordatorio");
             btnAccion.setText("Aceptar");
-
-            // Rellenar los campos con la información recuperada
             etNombre.setText(intent.getStringExtra("nombre"));
             etFrecuencia.setText(intent.getStringExtra("frecuencia"));
             etHora.setText(intent.getStringExtra("hora"));
@@ -51,25 +56,52 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
             etNotas.setText(intent.getStringExtra("notas"));
         }
 
-        // 3. Configurar el botón de regreso
+        // Botón atrás
         findViewById(R.id.iv_back_form).setOnClickListener(v -> finish());
 
-        // 4. Lógica del botón principal (Agregar o Aceptar)
+        // Botón guardar
         btnAccion.setOnClickListener(v -> {
-            if (esEdicion) {
-                // Aquí irá la lógica de Firebase para actualizar
-                Toast.makeText(this, "Cambios guardados", Toast.LENGTH_SHORT).show();
-            } else {
-                // Aquí irá la lógica de Firebase para crear nuevo
-                Toast.makeText(this, "Nuevo recordatorio agregado", Toast.LENGTH_SHORT).show();
-            }
-            finish(); // Regresa a la lista
+            String mensaje = esEdicion ? "Cambios guardados" : "Nuevo recordatorio agregado";
+            Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show();
+            finish();
         });
 
+        // Responsividad
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    private void configurarFrecuencia() {
+        final String[] opciones = {
+                "Una vez al día",
+                "Dos veces al día (Cada 12 horas)",
+                "Tres veces al día (Cada 8 horas)",
+                "Cuatro veces al día (Cada 6 horas)",
+                "Cada 2 días",
+                "Una vez a la semana"
+        };
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Frecuencia de toma");
+        builder.setItems(opciones, (dialog, which) -> {
+            etFrecuencia.setText(opciones[which]);
+        });
+        builder.show();
+    }
+
+    private void mostrarReloj() {
+        final Calendar c = Calendar.getInstance();
+        int h = c.get(Calendar.HOUR_OF_DAY);
+        int m = c.get(Calendar.MINUTE);
+
+        TimePickerDialog timePickerDialog = new TimePickerDialog(this,
+                (view, hourOfDay, minute) -> {
+                    String horaSelected = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute);
+                    etHora.setText(horaSelected);
+                }, h, m, true);
+        timePickerDialog.show();
     }
 }

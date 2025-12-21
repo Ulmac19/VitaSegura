@@ -13,7 +13,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class MainFamiliarActivity extends AppCompatActivity {
-    private LinearLayout btnMonitoreo, btnMedicamentos, btnUbicacion;
+    private LinearLayout btnMonitoreo, btnMedicamentos, btnUbicacion, btn_notificaciones;
     private ImageView btn_agregar_abuelo;
 
     @Override
@@ -27,6 +27,7 @@ public class MainFamiliarActivity extends AppCompatActivity {
         btn_agregar_abuelo = findViewById(R.id.btn_agregar_abuelo);
         btnMedicamentos = findViewById(R.id.btn_medicamentos);
         btnUbicacion = findViewById(R.id.btn_ubicacion);
+        btn_notificaciones = findViewById(R.id.btn_notificaciones);
 
         // 3. Ahora sí, configurar el listener
         if (btnMonitoreo != null) { // Buena práctica para evitar cierres
@@ -59,6 +60,14 @@ public class MainFamiliarActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainFamiliarActivity.this, UbicacionAdultoActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        btn_notificaciones.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainFamiliarActivity.this, NotificacionesActivity.class);
                 startActivity(intent);
             }
         });
