@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gris_claro"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+        <ImageView
+            android:id="@+id/iv_back_config"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:src="@drawable/atras"
+            app:tint="@color/azul_claro" />
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:id="@+id/container_config"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="30dp"
+                android:text="Configuración"
+                android:textColor="@color/azul_oscuro"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:layout_marginBottom="25dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingHorizontal="12dp">
+
+                    <ImageView
+                        android:id="@+id/iv_lupa"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/lupa"
+                        app:tint="@color/azul_claro" />
+
+                    <EditText
+                        android:id="@+id/et_buscar_config"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_toStartOf="@+id/iv_clear_search"
+                        android:layout_toEndOf="@id/iv_lupa"
+                        android:background="@android:color/transparent"
+                        android:hint="Buscar"
+                        android:paddingStart="10dp"
+                        android:textColor="@color/azul_oscuro"
+                        android:textSize="16sp" />
+
+                    <ImageView
+                        android:id="@+id/iv_clear_search"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@android:drawable/ic_menu_close_clear_cancel"
+                        android:visibility="gone"
+                        app:tint="@color/azul_claro" />
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+            <LinearLayout android:id="@+id/section_salud" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Actualización de datos de salud" android:textColor="@color/azul_oscuro" android:textSize="18sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="¿Cada cuánto quieres que se actualicen los datos de salud de tu adulto mayor?" android:textColor="@color/azul_claro" android:textSize="14sp" />
+                <RadioGroup android:id="@+id/rg_salud" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:layout_marginBottom="20dp">
+                    <RadioButton android:id="@+id/rb_salud_5" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="5 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                    <RadioButton android:id="@+id/rb_salud_10" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="10 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                    <RadioButton android:id="@+id/rb_salud_15" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="15 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/section_ubicacion" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Actualización de la ubicación" android:textColor="@color/azul_oscuro" android:textSize="18sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="¿Cada cuánto quieres que se actualice la ubicación de tu adulto mayor?" android:textColor="@color/azul_claro" android:textSize="14sp" />
+                <RadioGroup android:id="@+id/rg_ubicacion" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:layout_marginBottom="20dp">
+                    <RadioButton android:layout_width="match_parent" android:layout_height="wrap_content" android:text="5 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                    <RadioButton android:layout_width="match_parent" android:layout_height="wrap_content" android:text="10 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                </RadioGroup>
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/section_notificaciones" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Notificaciones" android:textColor="@color/azul_oscuro" android:textSize="18sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="¿Desea desactivar las notificaciones automáticas?" android:textColor="@color/azul_claro" android:textSize="14sp" />
+                <RadioGroup android:id="@+id/rg_notificaciones" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:layout_marginBottom="40dp">
+                    <RadioButton android:layout_width="match_parent" android:layout_height="wrap_content" android:text="No (por defecto)" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                    <RadioButton android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sí" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                </RadioGroup>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

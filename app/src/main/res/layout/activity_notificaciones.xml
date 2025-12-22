@@ -65,7 +65,7 @@
                         android:id="@+id/et_buscar_notificacion"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:layout_toStartOf="@+id/iv_calendario_filtro"
+                        android:layout_toStartOf="@+id/iv_clear_search_notis"
                         android:layout_toEndOf="@id/iv_lupa"
                         android:background="@android:color/transparent"
                         android:hint="Buscar Notificación"
@@ -74,12 +74,23 @@
                         android:textSize="14sp" />
 
                     <ImageView
+                        android:id="@+id/iv_clear_search_notis"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_centerVertical="true"
+                        android:layout_toStartOf="@+id/iv_calendario_filtro"
+                        android:layout_marginEnd="10dp"
+                        android:src="@android:drawable/ic_menu_close_clear_cancel"
+                        android:visibility="gone"
+                        app:tint="@color/azul_claro" />
+
+                    <ImageView
                         android:id="@+id/iv_calendario_filtro"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:layout_alignParentEnd="true"
                         android:layout_centerVertical="true"
-                        android:src="@drawable/calendario"/>
+                        android:src="@drawable/calendario" />
                 </RelativeLayout>
             </androidx.cardview.widget.CardView>
 

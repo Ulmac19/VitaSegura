@@ -6,6 +6,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -25,6 +26,7 @@ public class NotificacionesActivity extends AppCompatActivity {
     private TextView tvLabelEmergencia, tvLabelInfo;
     private List<Notificacion> listaOriginal;
     private EditText etBuscar;
+    private ImageView ivClearSearch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +36,7 @@ public class NotificacionesActivity extends AppCompatActivity {
 
         // Vincular vistas
         etBuscar = findViewById(R.id.et_buscar_notificacion);
+        ivClearSearch = findViewById(R.id.iv_clear_search_notis);
         tvLabelEmergencia = findViewById(R.id.tv_label_emergencia);
         tvLabelInfo = findViewById(R.id.tv_label_info);
 
@@ -51,12 +54,28 @@ public class NotificacionesActivity extends AppCompatActivity {
         etBuscar.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                aplicarFiltros(s.toString(), null);
+                String texto = s.toString();
+
+                // Lógica de visibilidad de la cruz
+                if (texto.isEmpty()) {
+                    ivClearSearch.setVisibility(View.GONE);
+                } else {
+                    ivClearSearch.setVisibility(View.VISIBLE);
+                }
+
+                aplicarFiltros(texto, null);
             }
+
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+
+        ivClearSearch.setOnClickListener(v -> {
+            etBuscar.setText(""); // Esto disparará automáticamente aplicarFiltros("")
+            ivClearSearch.setVisibility(View.GONE);
         });
 
         // 2. Filtrar por fecha al tocar el calendario

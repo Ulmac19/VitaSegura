@@ -17,6 +17,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.VitaSegura">
         <activity
+            android:name=".ConfiguracionActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UsuariosActivity"
+            android:exported="false" />
+        <activity
             android:name=".NotificacionesActivity"
             android:exported="false" />
 
