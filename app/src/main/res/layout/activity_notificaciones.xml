@@ -51,7 +51,8 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:paddingHorizontal="15dp">
+                    android:paddingHorizontal="15dp"
+                    android:background="@color/blanco">
 
                     <ImageView
                         android:id="@+id/iv_lupa"
@@ -67,7 +68,7 @@
                         android:layout_height="match_parent"
                         android:layout_toStartOf="@+id/iv_clear_search_notis"
                         android:layout_toEndOf="@id/iv_lupa"
-                        android:background="@android:color/transparent"
+                        android:background="@color/blanco"
                         android:hint="Buscar Notificación"
                         android:paddingStart="10dp"
                         android:textColor="@color/azul_oscuro"
