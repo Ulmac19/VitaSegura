@@ -1,6 +1,7 @@
 package com.example.vitasegura;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -14,17 +15,24 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.Firebase;
+import com.google.firebase.auth.FirebaseAuth;
+
 public class RegistroActivity extends AppCompatActivity {
 
     private EditText etNombre, etCorreo, etPassword, etConfirmPassword, etTelefono;
     private RadioGroup rgRol;
     private Button btnCrear;
+
+    private FirebaseAuth mAuth;
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_registro);
+
+        mAuth = FirebaseAuth.getInstance();
 
         etNombre = findViewById(R.id.et_nombre);
         etCorreo = findViewById(R.id.et_correo);
@@ -34,12 +42,20 @@ public class RegistroActivity extends AppCompatActivity {
         rgRol = findViewById(R.id.rg_rol);
         btnCrear = findViewById(R.id.btn_crear_cuenta_final);
 
-        btnCrear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Aquí irá la lógica de Firebase después
-                validarDatos();
-            }
+        btnCrear.setOnClickListener(v -> {
+            String email = etCorreo.getText().toString();
+            String password = etPassword.getText().toString();
+
+            mAuth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) {
+                            // Aquí guardarías el resto de datos (nombre, teléfono) en Realtime Database
+                            Toast.makeText(this, "Registro exitoso", Toast.LENGTH_SHORT).show();
+                            startActivity(new Intent(this, LoginActivity.class));
+                        } else {
+                            Toast.makeText(this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
         });
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {

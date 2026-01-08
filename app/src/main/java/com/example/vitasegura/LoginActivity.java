@@ -15,16 +15,22 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class LoginActivity extends AppCompatActivity {
 
     private EditText etCorreo, etPassword;
     private Button btnEntrar;
     private TextView tvOlvidaste, btnIniciarSesion; //btnIniciarSesion para el awelo
+    private FirebaseAuth mAuth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_login);
+
+        mAuth= FirebaseAuth.getInstance();
 
         etCorreo = findViewById(R.id.et_login_correo);
         etPassword = findViewById(R.id.et_login_password);
@@ -42,7 +48,19 @@ public class LoginActivity extends AppCompatActivity {
                 if (correo.isEmpty() || pass.isEmpty()) {
                     Toast.makeText(LoginActivity.this, "Completa todos los campos", Toast.LENGTH_SHORT).show();
                 } else {
-                    // Lógica de autenticación próximamente
+                    // AUTENTICACIÓN REAL
+                    mAuth.signInWithEmailAndPassword(correo, pass)
+                            .addOnCompleteListener(task -> {
+                                if (task.isSuccessful()) {
+                                    // Aquí decidiríamos si mandarlo a MainAdulto o MainFamiliar
+                                    // según el rol guardado en la base de datos
+                                    Intent intent = new Intent(LoginActivity.this, MainAdultoActivity.class);
+                                    startActivity(intent);
+                                    finish();
+                                } else {
+                                    Toast.makeText(LoginActivity.this, "Error de acceso", Toast.LENGTH_SHORT).show();
+                                }
+                            });
                 }
             }
         });
