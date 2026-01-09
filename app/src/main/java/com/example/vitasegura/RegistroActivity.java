@@ -59,17 +59,19 @@ public class RegistroActivity extends AppCompatActivity {
         String correo = etCorreo.getText().toString().trim();
         String pass = etPassword.getText().toString().trim();
         String confirmPass = etConfirmPassword.getText().toString().trim();
-        if (!pass.equals(confirmPass)) {
-            Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show();
-            return;
-        }
         String telefono = etTelefono.getText().toString().trim();
-
-
         int selectedId = rgRol.getCheckedRadioButtonId();
 
-        if (nombre.isEmpty() || correo.isEmpty() || pass.isEmpty() || telefono.isEmpty() || selectedId == -1) {
+        if (nombre.isEmpty() || correo.isEmpty() || pass.isEmpty() || confirmPass.isEmpty() || telefono.isEmpty() || selectedId == -1) {
             Toast.makeText(this, "Por favor, completa todos los campos y selecciona un rol", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (pass.length() < 6) {
+            Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!pass.equals(confirmPass)) {
+            Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show();
             return;
         }
 
