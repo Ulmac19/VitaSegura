@@ -12,10 +12,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class MainFamiliarActivity extends AppCompatActivity {
     private LinearLayout btnMonitoreo, btnMedicamentos, btnUbicacion, btn_notificaciones, btn_usuarios,
     btn_configuracion;
-    private ImageView btn_agregar_abuelo;
+    private ImageView btn_agregar_abuelo, btn_cerrar_sesion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,6 +33,8 @@ public class MainFamiliarActivity extends AppCompatActivity {
         btn_notificaciones = findViewById(R.id.btn_notificaciones);
         btn_usuarios = findViewById(R.id.btn_usuarios);
         btn_configuracion = findViewById(R.id.btn_configuracion);
+        btn_cerrar_sesion = findViewById(R.id.btn_cerrar_sesion);
+
 
         // 3. Ahora sí, configurar el listener
         if (btnMonitoreo != null) { // Buena práctica para evitar cierres
@@ -50,6 +54,15 @@ public class MainFamiliarActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+
+       btn_cerrar_sesion.setOnClickListener(view -> {
+           FirebaseAuth.getInstance().signOut(); // Borra el token del celular
+           Intent intent = new Intent(this, LoginActivity.class);
+           // Borramos el historial de pantallas para que no pueda volver atrás
+           intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+           startActivity(intent);
+           finish();
+       });
 
         btnMedicamentos.setOnClickListener(new View.OnClickListener() {
             @Override

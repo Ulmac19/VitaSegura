@@ -25,9 +25,7 @@ public class RegistroActivity extends AppCompatActivity {
     private EditText etNombre, etCorreo, etPassword, etConfirmPassword, etTelefono;
     private RadioGroup rgRol;
     private Button btnRegistar;
-
     private FirebaseAuth mAuth;
-    private DatabaseReference mDatabase;
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +34,6 @@ public class RegistroActivity extends AppCompatActivity {
         setContentView(R.layout.activity_registro);
 
         mAuth = FirebaseAuth.getInstance();
-        mDatabase = FirebaseDatabase.getInstance().getReference();
 
         etNombre = findViewById(R.id.et_nombre);
         etCorreo = findViewById(R.id.et_correo);
