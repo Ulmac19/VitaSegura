@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +25,8 @@ public class MainAdultoActivity extends AppCompatActivity {
 
     private LinearLayout btnSalud, btnMeds, btnEmergencia, btnInfo, btnGenerarCodigo;
     private TextView tvBienvenida;
+
+    private ImageView btn_vincular_pulsera;
 
     private String uidAbuelo;
 
@@ -49,6 +52,7 @@ public class MainAdultoActivity extends AppCompatActivity {
         btnMeds = findViewById(R.id.btn_medicamentos);
         btnEmergencia = findViewById(R.id.btn_emergencia);
         btnInfo = findViewById(R.id.btn_info_personal);
+        btn_vincular_pulsera = findViewById(R.id.btn_vincular_pulsera);
 
         // Ejemplo de navegación al módulo de salud
         btnSalud.setOnClickListener(v -> {
@@ -74,6 +78,12 @@ public class MainAdultoActivity extends AppCompatActivity {
         btnEmergencia.setOnClickListener(v -> {
             Intent intent = new Intent(MainAdultoActivity.this, AlertaEmergenciaActivity.class);
             startActivity(intent);
+        });
+
+        btn_vincular_pulsera.setOnClickListener(v -> {
+            Intent intent = new Intent(MainAdultoActivity.this, PulseraActivity.class);
+            startActivity(intent);
+
         });
 
 

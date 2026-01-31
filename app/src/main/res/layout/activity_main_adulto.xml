@@ -15,16 +15,32 @@
         android:paddingTop="20dp"
         android:paddingBottom="20dp">
 
-        <TextView
-        android:id="@+id/tv_bienvenida_nombre"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Bienvenido,\n[Nombre]"
-        android:textColor="@color/azul_claro"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:textAlignment="center" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:layout_marginTop="20dp">
+
+            <TextView
+                android:id="@+id/tv_bienvenida_nombre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:text="Bienvenido,\n[Nombre]"
+                android:textColor="@color/azul_claro"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:textAlignment="center" />
+
+            <ImageView
+                android:id="@+id/btn_vincular_pulsera"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:src="@drawable/pulsera"
+                app:tint="@color/azul_oscuro" />
+        </RelativeLayout>
 
         <TextView
             android:layout_width="wrap_content"

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
@@ -15,7 +16,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="20dp">
-
             <ImageView
                 android:id="@+id/iv_back_salud"
                 android:layout_width="35dp"
@@ -44,25 +44,21 @@
             android:textSize="32sp" />
 
         <TextView
+            android:id="@+id/tv_bpm_actual"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Actual: ... BPM"
+            android:text="Actual: -- BPM"
             android:textColor="#7DB9A9"
             android:textSize="18sp"
-            android:layout_marginStart="20dp"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginStart="20dp" />
 
-        <FrameLayout
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart_pulso"
             android:layout_width="350dp"
             android:layout_height="170dp"
             android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="8dp"
-            android:background="#E1F5FE">
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="fitCenter" />
-        </FrameLayout>
+            android:layout_marginBottom="15dp"
+            android:background="#E1F5FE" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -73,24 +69,22 @@
             android:textSize="32sp" />
 
         <TextView
+            android:id="@+id/tv_oxigenacion_actual"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Actual: ... %"
+            android:text="Actual: -- %"
             android:textColor="#7DB9A9"
             android:textSize="18sp"
             android:layout_marginStart="20dp"
             android:layout_marginBottom="8dp" />
 
-        <FrameLayout
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/chart_oxigeno"
             android:layout_width="350dp"
             android:layout_height="170dp"
             android:layout_gravity="center_horizontal"
-            android:background="#E1F5FE">
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="fitCenter" />
-        </FrameLayout>
+            android:layout_marginBottom="20dp"
+            android:background="#E1F5FE" />
 
     </LinearLayout>
 </ScrollView>
