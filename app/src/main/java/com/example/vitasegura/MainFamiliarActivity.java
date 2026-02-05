@@ -1,10 +1,12 @@
 package com.example.vitasegura;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,17 +15,41 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class MainFamiliarActivity extends AppCompatActivity {
     private LinearLayout btnMonitoreo, btnMedicamentos, btnUbicacion, btn_notificaciones, btn_usuarios,
     btn_configuracion;
     private ImageView btn_agregar_abuelo, btn_cerrar_sesion;
+    private TextView tvNombre;
+    private String uidCuidador;
+    private FirebaseAuth mAuth;
+    private DatabaseReference mDatabase;
 
+
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main_familiar);
+
+        mAuth = FirebaseAuth.getInstance();
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+
+        uidCuidador = mAuth.getCurrentUser().getUid();
+
+        tvNombre = findViewById(R.id.tv_bienvenida_cuidador);
+
+        mDatabase.child("Usuarios").child(uidCuidador).child("nombre").get().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult().getValue() != null) {
+                String nombre = task.getResult().getValue(String.class);
+                tvNombre.setText("Bienvenido,\n" + nombre);
+            }
+        });
+
+
 
         // 2. IMPORTANTE: Vincular el ID después de setContentView
         btnMonitoreo = findViewById(R.id.btn_monitoreo);

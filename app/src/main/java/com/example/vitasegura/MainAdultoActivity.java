@@ -24,8 +24,7 @@ import com.google.firebase.database.FirebaseDatabase;
 public class MainAdultoActivity extends AppCompatActivity {
 
     private LinearLayout btnSalud, btnMeds, btnEmergencia, btnInfo, btnGenerarCodigo;
-    private TextView tvBienvenida;
-
+    private TextView tvNombre;
     private ImageView btn_vincular_pulsera;
 
     private String uidAbuelo;
@@ -39,15 +38,26 @@ public class MainAdultoActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main_adulto);
 
-        uidAbuelo = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        mAuth = FirebaseAuth.getInstance();
         mDatabase = FirebaseDatabase.getInstance().getReference();
+
+        uidAbuelo = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        tvNombre = findViewById(R.id.tv_bienvenida_adulto);
+
+        mDatabase.child("Usuarios").child(uidAbuelo).child("nombre").get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                String nombre = task.getResult().getValue(String.class);
+                tvNombre.setText("Bienvenido, " + nombre);
+            }
+        });
 
         btnGenerarCodigo = findViewById(R.id.btn_generar_codigo);
         btnGenerarCodigo.setOnClickListener(v -> gestionarCodigoVinculacion());
 
 
 
-        tvBienvenida = findViewById(R.id.tv_bienvenida_nombre);
+
         btnSalud = findViewById(R.id.btn_salud);
         btnMeds = findViewById(R.id.btn_medicamentos);
         btnEmergencia = findViewById(R.id.btn_emergencia);

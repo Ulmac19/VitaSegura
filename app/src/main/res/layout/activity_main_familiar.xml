@@ -38,7 +38,7 @@
         android:paddingHorizontal="20dp">
 
         <TextView
-            android:id="@+id/tv_bienvenida_nombre_familiar"
+            android:id="@+id/tv_bienvenida_cuidador"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
