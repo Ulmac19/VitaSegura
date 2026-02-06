@@ -38,7 +38,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pulso Cardiaco"
+            android:text="Pulso Cardíaco"
             android:textColor="#80C7DE"
             android:layout_marginStart="20dp"
             android:textSize="32sp" />
@@ -55,7 +55,7 @@
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart_pulso"
             android:layout_width="350dp"
-            android:layout_height="170dp"
+            android:layout_height="250dp"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="15dp"
             android:background="#E1F5FE" />
@@ -81,7 +81,7 @@
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart_oxigeno"
             android:layout_width="350dp"
-            android:layout_height="170dp"
+            android:layout_height="250dp"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="20dp"
             android:background="#E1F5FE" />

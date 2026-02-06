@@ -45,18 +45,24 @@ public class MainAdultoActivity extends AppCompatActivity {
 
         tvNombre = findViewById(R.id.tv_bienvenida_adulto);
 
+        // Recuperar nombre y extraer solo el primer nombre
         mDatabase.child("Usuarios").child(uidAbuelo).child("nombre").get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                String nombre = task.getResult().getValue(String.class);
-                tvNombre.setText("Bienvenido, " + nombre);
+            if (task.isSuccessful() && task.getResult().getValue() != null) {
+                String nombreCompleto = task.getResult().getValue(String.class);
+
+                // Lógica para obtener el primer nombre
+                String primerNombre = "";
+                if (nombreCompleto != null && !nombreCompleto.isEmpty()) {
+                    String[] partes = nombreCompleto.split(" ");
+                    primerNombre = partes[0]; // Tomamos la primera posición
+                }
+
+                tvNombre.setText("Bienvenido,\n" + primerNombre);
             }
         });
 
         btnGenerarCodigo = findViewById(R.id.btn_generar_codigo);
         btnGenerarCodigo.setOnClickListener(v -> gestionarCodigoVinculacion());
-
-
-
 
         btnSalud = findViewById(R.id.btn_salud);
         btnMeds = findViewById(R.id.btn_medicamentos);
@@ -64,27 +70,21 @@ public class MainAdultoActivity extends AppCompatActivity {
         btnInfo = findViewById(R.id.btn_info_personal);
         btn_vincular_pulsera = findViewById(R.id.btn_vincular_pulsera);
 
-        // Ejemplo de navegación al módulo de salud
         btnSalud.setOnClickListener(v -> {
             Intent intent = new Intent(MainAdultoActivity.this, MonitoreoSaludActivity.class);
             startActivity(intent);
-
         });
 
-        // Ejemplo de navegación al módulo de medicamentos
         btnMeds.setOnClickListener(v -> {
             Intent intent = new Intent(MainAdultoActivity.this, MedicamentosAbueloActivity.class);
             startActivity(intent);
         });
 
-        // Ejemplo de navegación al módulo de información personal
         btnInfo.setOnClickListener(v -> {
             Intent intent = new Intent(MainAdultoActivity.this, MiInformacionActivity.class);
             startActivity(intent);
         });
 
-
-        // El botón de emergencia podría disparar una alerta directa
         btnEmergencia.setOnClickListener(v -> {
             Intent intent = new Intent(MainAdultoActivity.this, AlertaEmergenciaActivity.class);
             startActivity(intent);
@@ -93,9 +93,7 @@ public class MainAdultoActivity extends AppCompatActivity {
         btn_vincular_pulsera.setOnClickListener(v -> {
             Intent intent = new Intent(MainAdultoActivity.this, PulseraActivity.class);
             startActivity(intent);
-
         });
-
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -105,8 +103,7 @@ public class MainAdultoActivity extends AppCompatActivity {
     }
 
     private void gestionarCodigoVinculacion() {
-        // 1. Generar código de 6 caracteres alfanuméricos
-        String caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Evitamos O, 0, I, 1 para evitar confusión
+        String caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         StringBuilder codigo = new StringBuilder();
         for (int i = 0; i < 6; i++) {
             int index = (int) (Math.random() * caracteres.length());
@@ -114,10 +111,8 @@ public class MainAdultoActivity extends AppCompatActivity {
         }
         String codigoFinal = codigo.toString();
 
-        // 2. Guardar en Firebase (Rama temporal)
         mDatabase.child("Codigos_Temporales").child(codigoFinal).setValue(uidAbuelo)
                 .addOnSuccessListener(aVoid -> {
-                    // 3. Mostrar el código al abuelo
                     mostrarDialogoCodigo(codigoFinal);
                 })
                 .addOnFailureListener(e -> {
@@ -126,16 +121,15 @@ public class MainAdultoActivity extends AppCompatActivity {
     }
 
     private void mostrarDialogoCodigo(String codigo) {
-        // Creamos un diseño inflado o un simple AlertDialog con letra muy grande
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Código para tu familiar");
 
         TextView tvCodigo = new TextView(this);
         tvCodigo.setText(codigo);
-        tvCodigo.setTextSize(60); // Letra gigante para que la vean bien
+        tvCodigo.setTextSize(60);
         tvCodigo.setPadding(0, 50, 0, 50);
         tvCodigo.setGravity(Gravity.CENTER);
-        tvCodigo.setTextColor(Color.parseColor("#23608C")); // El azul oscuro que usas
+        tvCodigo.setTextColor(Color.parseColor("#23608C"));
         tvCodigo.setTypeface(null, Typeface.BOLD);
 
         builder.setView(tvCodigo);
