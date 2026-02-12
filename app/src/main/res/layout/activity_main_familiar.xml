@@ -1,73 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/gris_claro"
-    android:gravity="center_horizontal"
-    android:orientation="vertical">
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="20dp">
-
-        <ImageView
-            android:id="@+id/btn_cerrar_sesion"
-            android:layout_width="35dp"
-            android:layout_height="35dp"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:src="@drawable/cerrar_sesion"/>
-
-        <ImageView
-            android:id="@+id/btn_agregar_abuelo"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:src="@drawable/agregar_abuelito"/>
-    </RelativeLayout>
+    android:fillViewport="true"
+    android:background="@color/gris_claro">
 
     <LinearLayout
+        android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingHorizontal="20dp">
+        android:paddingBottom="30dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="20dp">
+
+            <ImageView
+                android:id="@+id/btn_cerrar_sesion"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:src="@drawable/cerrar_sesion" />
+
+            <ImageView
+                android:id="@+id/btn_agregar_abuelo"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:src="@drawable/agregar_abuelito" />
+        </RelativeLayout>
 
         <TextView
             android:id="@+id/tv_bienvenida_cuidador"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="10dp"
             android:text="Bienvenido,\n[Nombre]"
             android:textAlignment="center"
             android:textColor="@color/azul_claro"
-            android:textSize="36sp"
+            android:textSize="32sp"
             android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="15dp"
             android:text="¿Qué te gustaría consultar el día de hoy?"
             android:textColor="@color/azul_oscuro"
             android:textStyle="bold"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textAlignment="center"
-            android:layout_marginBottom="30dp" />
+            android:paddingHorizontal="40dp" />
 
-        <LinearLayout
-            android:layout_width="360dp"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_estado_conexion"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="1dp">
+            android:layout_marginHorizontal="30dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="25dp"
+            app:cardCornerRadius="15dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="140dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="15dp"
+                android:gravity="center_vertical"
+                android:background="#FFFFFF">
+
+                <ImageView
+                    android:id="@+id/iv_icono_vinculo"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/conexion"
+                    app:tint="#D3D3D3" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="15dp">
+
+                    <TextView
+                        android:id="@+id/tv_titulo_conexion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sin familiar vinculado"
+                        android:textColor="@color/azul_oscuro"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_subtitulo_conexion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Usa el código para conectar"
+                        android:textColor="#AAAAAA"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <View
+                    android:id="@+id/view_indicador_led"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:background="@drawable/circle_background"
+                    android:backgroundTint="#D3D3D3" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="30dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="130dp"
                 android:orientation="horizontal">
 
                 <LinearLayout
@@ -80,8 +138,8 @@
                     android:orientation="vertical"
                     android:layout_marginEnd="1dp">
                     <ImageView
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
                         android:src="@drawable/monitoreo" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -89,7 +147,7 @@
                         android:text="Monitoreo"
                         android:textColor="@color/black"
                         android:textStyle="bold"
-                        android:textSize="18sp" />
+                        android:textSize="17sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -101,8 +159,8 @@
                     android:gravity="center"
                     android:orientation="vertical">
                     <ImageView
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
                         android:src="@drawable/medicamentos_logo" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -110,13 +168,13 @@
                         android:text="Medicamentos"
                         android:textStyle="bold"
                         android:textColor="@color/black"
-                        android:textSize="18sp" />
+                        android:textSize="17sp" />
                 </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="140dp"
+                android:layout_height="130dp"
                 android:layout_marginTop="1dp"
                 android:orientation="horizontal">
 
@@ -130,15 +188,15 @@
                     android:gravity="center"
                     android:orientation="vertical">
                     <ImageView
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
                         android:src="@drawable/ubicacion" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Ubicación"
                         android:textColor="@color/black"
-                        android:textSize="18sp"
+                        android:textSize="17sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -151,8 +209,8 @@
                     android:gravity="center"
                     android:orientation="vertical">
                     <ImageView
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
                         android:src="@drawable/notificacion" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -160,13 +218,13 @@
                         android:text="Notificaciones"
                         android:textStyle="bold"
                         android:textColor="@color/black"
-                        android:textSize="18sp" />
+                        android:textSize="17sp" />
                 </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="140dp"
+                android:layout_height="130dp"
                 android:layout_marginTop="1dp"
                 android:orientation="horizontal">
 
@@ -180,8 +238,8 @@
                     android:orientation="vertical"
                     android:layout_marginEnd="1dp">
                     <ImageView
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
                         android:src="@drawable/usuarios" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -189,7 +247,7 @@
                         android:text="Usuarios"
                         android:textColor="@color/black"
                         android:textStyle="bold"
-                        android:textSize="18sp" />
+                        android:textSize="17sp" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -201,8 +259,8 @@
                     android:gravity="center"
                     android:orientation="vertical">
                     <ImageView
-                        android:layout_width="80dp"
-                        android:layout_height="80dp"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
                         android:src="@drawable/configuracion" />
                     <TextView
                         android:layout_width="wrap_content"
@@ -210,10 +268,10 @@
                         android:text="Configuración"
                         android:textStyle="bold"
                         android:textColor="@color/black"
-                        android:textSize="18sp" />
+                        android:textSize="17sp" />
                 </LinearLayout>
             </LinearLayout>
 
         </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</ScrollView>
