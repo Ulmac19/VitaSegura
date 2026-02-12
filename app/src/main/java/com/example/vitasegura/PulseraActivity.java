@@ -85,10 +85,20 @@ public class PulseraActivity extends AppCompatActivity {
         public void onScanResult(int callbackType, ScanResult result) {
             BluetoothDevice device = result.getDevice();
             @SuppressLint("MissingPermission") String name = device.getName();
+
+            // Si el nombre es nulo, intentamos obtenerlo del paquete de anuncio real
+            if (name == null && result.getScanRecord() != null) {
+                name = result.getScanRecord().getDeviceName();
+            }
+
             if (name != null && name.equals("ESP32-C3-Salud")) {
                 targetDevice = device;
+
+                // Creamos esta variable final para que la lambda no marque error
+                final String nombreFinal = name;
+
                 runOnUiThread(() -> {
-                    tvNombre.setText(name);
+                    tvNombre.setText(nombreFinal); // Usamos la variable final aquí
                     tvMAC.setText(device.getAddress());
                     cvDispositivo.setVisibility(View.VISIBLE);
                     progressBar.setVisibility(View.GONE);

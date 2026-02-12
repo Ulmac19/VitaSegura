@@ -36,9 +36,16 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 
+// NUEVOS IMPORTS PARA FIREBASE
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -49,6 +56,10 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
     private HealthDBHelper dbHelper;
     private List<String> fechasEjeX = new ArrayList<>();
     private final Handler hideHandler = new Handler(Looper.getMainLooper());
+
+    // VARIABLES PARA FIREBASE
+    private DatabaseReference mDatabase;
+    private String uidAdulto;
 
     private final BroadcastReceiver receptorDatos = new BroadcastReceiver() {
         @Override
@@ -65,6 +76,12 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_monitoreo_salud);
+
+        // INICIALIZAR FIREBASE
+        mDatabase = FirebaseDatabase.getInstance().getReference();
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            uidAdulto = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
 
         dbHelper = new HealthDBHelper(this);
         dbHelper.limpiarDatosAntiguos();
@@ -106,8 +123,6 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
     private void setupGrafica(LineChart chart, String colorHex, String unidadY, float granularidadY, float maxValY, String titulo) {
         if (chart == null) return;
 
-        // REDUCCIÓN DE MÁRGENES: Para que la gráfica estire y llene el fondo
-        // 45 arriba para el título de 2 líneas, 35 abajo para fechas
         chart.setExtraOffsets(5, 45, 12, 35);
 
         Description desc = new Description();
@@ -118,7 +133,6 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         desc.setTextAlign(Paint.Align.CENTER);
 
         chart.post(() -> {
-            // Posición Y ajustada a 40f para que el título no empuje la cuadrícula hacia abajo
             desc.setPosition(chart.getWidth() / 2f, 40f);
             chart.setDescription(desc);
             chart.invalidate();
@@ -239,6 +253,8 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
     private void procesarDatosReales(String rawData) {
         try {
             String cleanData = rawData.trim();
+
+            // PROCESAR SALUD (BPM y SpO2)
             if (cleanData.contains("BPM:") && cleanData.contains("SpO2:")) {
                 String bpmStr = cleanData.split("BPM:")[1].trim().split(" ")[0];
                 String oxiStr = cleanData.split("SpO2:")[1].trim().split("%")[0];
@@ -248,13 +264,57 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
                 dbHelper.insertarLecturaTemporal(valBpm, valOxi);
                 dbHelper.consolidarDiasAnteriores();
 
+                // ENVIAR SALUD A FIREBASE
+                subirSaludAFirebase(valBpm, valOxi);
+
                 runOnUiThread(() -> {
                     if (tvBpm != null) tvBpm.setText("Actual: " + (int)valBpm + " BPM");
                     if (tvOxi != null) tvOxi.setText("Actual: " + (int)valOxi + " %");
                     cargarHistorialGraficas();
                 });
             }
+
+            // PROCESAR UBICACIÓN (Basado en el formato Arduino LAT:xx LON:xx)
+            if (cleanData.contains("LAT:") && cleanData.contains("LON:")) {
+                try {
+                    // Ejemplo: "LAT:20.6597 LON:-103.3496"
+                    String[] partes = cleanData.split(" ");
+                    String latStr = "";
+                    String lonStr = "";
+
+                    for(String p : partes) {
+                        if(p.startsWith("LAT:")) latStr = p.replace("LAT:", "");
+                        if(p.startsWith("LON:")) lonStr = p.replace("LON:", "");
+                    }
+
+                    if(!latStr.isEmpty() && !lonStr.isEmpty()) {
+                        subirUbicacionAFirebase(Double.parseDouble(latStr), Double.parseDouble(lonStr));
+                    }
+                } catch (Exception e) { /* Error de parseo */ }
+            }
+
         } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    // MÉTODOS DE ENVÍO A FIREBASE
+    private void subirSaludAFirebase(float bpm, float oxi) {
+        if (uidAdulto == null) return;
+        HashMap<String, Object> salud = new HashMap<>();
+        salud.put("bpm", bpm);
+        salud.put("oxi", oxi);
+        salud.put("timestamp", ServerValue.TIMESTAMP);
+
+        mDatabase.child("Usuarios").child(uidAdulto).child("MonitoreoActual").setValue(salud);
+    }
+
+    private void subirUbicacionAFirebase(double lat, double lon) {
+        if (uidAdulto == null) return;
+        HashMap<String, Object> gps = new HashMap<>();
+        gps.put("latitud", lat);
+        gps.put("longitud", lon);
+        gps.put("ultima_actualizacion", ServerValue.TIMESTAMP);
+
+        mDatabase.child("Usuarios").child(uidAdulto).child("Ubicacion").setValue(gps);
     }
 
     @Override

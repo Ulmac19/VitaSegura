@@ -3,6 +3,7 @@ package com.example.vitasegura;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.widget.ImageView;
@@ -94,6 +95,13 @@ public class MainAdultoActivity extends AppCompatActivity {
             Intent intent = new Intent(MainAdultoActivity.this, PulseraActivity.class);
             startActivity(intent);
         });
+
+        Intent serviceIntent = new Intent(this, SaludService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
