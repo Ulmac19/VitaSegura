@@ -12,17 +12,40 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import android.content.SharedPreferences;
+import android.widget.RadioGroup;
+
 public class ConfiguracionActivity extends AppCompatActivity {
 
     private EditText etBuscar;
     private ImageView ivClearSearch;
     private LinearLayout sectionSalud, sectionUbicacion, sectionNotificaciones;
+    private RadioGroup rgSalud, rgUbicacion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_configuracion);
 
+        //Vincular RadioGroup
+        rgSalud = findViewById(R.id.rg_salud);
+        rgUbicacion = findViewById(R.id.rg_ubicacion);
+
+        SharedPreferences prefs = getSharedPreferences("VitaConfig", MODE_PRIVATE);
+
+        int freqSalud = prefs.getInt("frecuencia_salud", 5);
+        if(freqSalud == 5) rgSalud.check(R.id.rb_salud_5);
+        else if(freqSalud == 10) rgSalud.check(R.id.rb_salud_10);
+        else if(freqSalud == 15) rgSalud.check(R.id.rb_salud_15);
+
+
+        rgSalud.setOnCheckedChangeListener((group, checkedId) -> {
+            int minutos = 5;
+            if(checkedId == R.id.rb_salud_10) minutos = 10;
+            else if(checkedId == R.id.rb_salud_15) minutos = 15;
+
+            prefs.edit().putInt("frecuencia_salud", minutos).apply();
+        });
         // Vincular vistas
         etBuscar = findViewById(R.id.et_buscar_config);
         ivClearSearch = findViewById(R.id.iv_clear_search);
@@ -83,4 +106,6 @@ public class ConfiguracionActivity extends AppCompatActivity {
         sectionUbicacion.setVisibility("actualización de la ubicación".contains(query) ? View.VISIBLE : View.GONE);
         sectionNotificaciones.setVisibility("notificaciones".contains(query) ? View.VISIBLE : View.GONE);
     }
+
+
 }

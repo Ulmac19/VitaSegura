@@ -1,10 +1,12 @@
 package com.example.vitasegura;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -56,6 +58,7 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
     private HealthDBHelper dbHelper;
     private List<String> fechasEjeX = new ArrayList<>();
     private final Handler hideHandler = new Handler(Looper.getMainLooper());
+    private long ultimaVezSubidoSalud = 0;
 
     // VARIABLES PARA FIREBASE
     private DatabaseReference mDatabase;
@@ -71,6 +74,7 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         }
     };
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -299,12 +303,26 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
     // MÉTODOS DE ENVÍO A FIREBASE
     private void subirSaludAFirebase(float bpm, float oxi) {
         if (uidAdulto == null) return;
-        HashMap<String, Object> salud = new HashMap<>();
-        salud.put("bpm", bpm);
-        salud.put("oxi", oxi);
-        salud.put("timestamp", ServerValue.TIMESTAMP);
 
-        mDatabase.child("Usuarios").child(uidAdulto).child("MonitoreoActual").setValue(salud);
+        //Obtener la configuracion del usuario
+        SharedPreferences prefs = getSharedPreferences("VitaConfig", MODE_PRIVATE);
+        int minutosConfigurados = prefs.getInt("frecuencia_salud", 5);
+        long milisegundosEspera = minutosConfigurados * 60 * 1000;
+
+        //Verificar si ya paso el tiempo suficiente
+        long tiempoActual = System.currentTimeMillis();
+        if(tiempoActual - ultimaVezSubidoSalud >= milisegundosEspera){
+            HashMap<String, Object> salud = new HashMap<>();
+            salud.put("bpm", bpm);
+            salud.put("oxi", oxi);
+            salud.put("timestamp", ServerValue.TIMESTAMP);
+
+            mDatabase.child("Usuarios").child(uidAdulto).child("MonitoreoActual").setValue(salud);
+        }
+
+
+
+
     }
 
     private void subirUbicacionAFirebase(double lat, double lon) {
