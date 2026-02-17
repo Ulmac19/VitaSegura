@@ -1,44 +1,42 @@
 package com.example.vitasegura;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.BarData;
+import com.github.mikephil.charting.data.BarDataSet;
+import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.github.mikephil.charting.utils.MPPointF;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -49,15 +47,16 @@ import java.util.Locale;
 public class InformacionAbueloActivity extends AppCompatActivity {
 
     private TextView tvBpm, tvOxi;
+    private LineChart chartDiario;
+    private BarChart chartSemanal; // Cambiado a BarChart
+
     private DatabaseReference mDatabase;
     private String uidCuidador;
-
     private HealthDBHelper dbHelper;
-    private final Handler hideHandler = new Handler(Looper.getMainLooper());
-    private LineChart chartPulso, chartOxi;
-    private List<String> fechasEjeX = new ArrayList<>();
 
-
+    private Handler handlerMonitoreo = new Handler(Looper.getMainLooper());
+    private Runnable runnableMonitoreo;
+    private int intervaloMilisegundos = 5 * 60 * 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,34 +64,25 @@ public class InformacionAbueloActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_informacion_abuelo);
 
-        tvBpm = findViewById(R.id.tv_bpm_actual);
-        tvOxi = findViewById(R.id.tv_oxigenacion_actual);
-        chartPulso = findViewById(R.id.chart_pulso);
-        chartOxi = findViewById(R.id.chart_oxigeno);
+        tvBpm = findViewById(R.id.tv_actual_bpm);
+        tvOxi = findViewById(R.id.tv_actual_oxigeno);
+        chartDiario = findViewById(R.id.chart_diario);
+        chartSemanal = findViewById(R.id.chart_semanal);
         findViewById(R.id.iv_back_salud).setOnClickListener(v -> finish());
 
         mDatabase = FirebaseDatabase.getInstance().getReference();
-        uidCuidador = FirebaseAuth.getInstance().getCurrentUser().getUid();
-
+        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+            uidCuidador = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        }
         dbHelper = new HealthDBHelper(this);
         dbHelper.limpiarDatosAntiguos();
 
-        //Configuracion de Graficas
-        if(chartPulso != null){
-            setupGrafica(chartPulso, "#23608C", "BPM", 10f,
-                    150f, "Historial de pulso cardiaco del familiar");
-        }
-        if (chartOxi != null) {
-            setupGrafica(chartOxi, "#7DB9A9", "%", 5f,
-                    100f, "Historial de oxigenación del familiar");
-        }
+        // Configuración visual y controles de Zoom/Desplazamiento
+        setupGrafica(chartDiario);
+        setupGrafica(chartSemanal);
 
-        //Cargar los datos previos existentes en el dispositivo
         cargarHistorialGraficas();
-
-        //Iniciar el proceso de busqueda del abuelo y escuchar Firebase
-        obtenerIdAbueloYMonitorear();
-
+        obtenerIdAbueloYConfiguracion();
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -101,181 +91,224 @@ public class InformacionAbueloActivity extends AppCompatActivity {
         });
     }
 
-    private void obtenerIdAbueloYMonitorear(){
-        //Buscar al abuelo vinculado
+    private void obtenerIdAbueloYConfiguracion() {
+        SharedPreferences prefs = getSharedPreferences("VitaConfig", MODE_PRIVATE);
+        int minutos = prefs.getInt("frecuencia_salud", 5);
+        intervaloMilisegundos = minutos * 60 * 1000;
+
         mDatabase.child("Vinculos").child(uidCuidador).child("id_adulto_vinculado")
-                .get().addOnCompleteListener(task ->{
-                    if(task.isSuccessful() && task.getResult().exists()){
-                        String uidABuelo = task.getResult().getValue(String.class);
-                        iniciarEscuchaRealTime(uidABuelo);
+                .get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult().exists()) {
+                        iniciarMonitoreoPeriodico(task.getResult().getValue(String.class));
                     }
                 });
     }
 
-    private void iniciarEscuchaRealTime(String uidAbuelo) {
-        mDatabase.child("Usuarios").child(uidAbuelo).child("MonitoreoActual")
-                .addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if(snapshot.exists()) {
-                            //Extraer BPM y Oxi
-                            Float bpm = snapshot.child("bpm").getValue(Float.class);
-                            Float oxi = snapshot.child("oxi").getValue(Float.class);
+    private void iniciarMonitoreoPeriodico(String uidAbuelo) {
+        runnableMonitoreo = new Runnable() {
+            @Override
+            public void run() {
+                mDatabase.child("Usuarios").child(uidAbuelo).child("MonitoreoActual").get()
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful() && task.getResult().exists()) {
+                                Float bpm = task.getResult().child("bpm").getValue(Float.class);
+                                Float oxi = task.getResult().child("oxi").getValue(Float.class);
 
-                            if (bpm != null && oxi != null) {
-                                // GUARDAR EN EL SQLITE LOCAL DEL CUIDADOR
-                                // Esto guarda el dato que acaba de llegar de Firebase
-                                dbHelper.insertarLecturaTemporal(bpm, oxi);
-                                dbHelper.consolidarDiasAnteriores();
-
-                                // ACTUALIZAR LA INTERFAZ
-                                tvBpm.setText("Actual: " + bpm.intValue() + " BPM");
-                                tvOxi.setText("Actual: " + oxi.intValue() + " %");
-
-                                // REFRESCAR LAS GRÁFICAS CON LOS DATOS DEL SQLITE
-                                cargarHistorialGraficas();
+                                if (bpm != null && oxi != null) {
+                                    dbHelper.insertarLecturaTemporal(bpm, oxi);
+                                    dbHelper.consolidarDiasAnteriores();
+                                    tvBpm.setText("Actual: " + bpm.intValue() + " BPM");
+                                    tvOxi.setText("Actual: " + oxi.intValue() + " %");
+                                    cargarHistorialGraficas();
+                                }
                             }
-                        }
-
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {}
-                });
+                        });
+                handlerMonitoreo.postDelayed(this, intervaloMilisegundos);
+            }
+        };
+        handlerMonitoreo.post(runnableMonitoreo);
     }
 
     private void cargarHistorialGraficas() {
-        fechasEjeX.clear();
-        List<Entry> entriesBpm = dbHelper.getPromediosGrafica("bpm", fechasEjeX);
-        List<Entry> entriesOxi = dbHelper.getPromediosGrafica("oxi", null);
+        List<String> fechasEjeX = new ArrayList<>();
+        List<Entry> dailyBpm = dbHelper.getPromediosGrafica("bpm", fechasEjeX);
+        List<Entry> dailyOxi = dbHelper.getPromediosGrafica("oxi", null);
 
-        actualizarGraficaDePromedios(chartPulso, entriesBpm, "#23608C");
-        actualizarGraficaDePromedios(chartOxi, entriesOxi, "#7DB9A9");
+        // 1. DIBUJAR GRÁFICA DIARIA (Líneas)
+        actualizarGraficaDiaria(chartDiario, dailyBpm, dailyOxi);
+        if (chartDiario != null && !fechasEjeX.isEmpty()) {
+            chartDiario.getXAxis().setValueFormatter(new ValueFormatter() {
+                @Override
+                public String getFormattedValue(float value) {
+                    int index = (int) value;
+                    return (index >= 0 && index < fechasEjeX.size()) ? fechasEjeX.get(index) : "";
+                }
+            });
+            chartDiario.setVisibleXRangeMaximum(7);
+            chartDiario.moveViewToX(fechasEjeX.size());
+        }
 
-        if (chartPulso != null) chartPulso.setVisibleXRangeMaximum(5);
-        if (chartOxi != null) chartOxi.setVisibleXRangeMaximum(5);
-
-        if (chartPulso != null) chartPulso.moveViewToX(fechasEjeX.size());
-        if (chartOxi != null) chartOxi.moveViewToX(fechasEjeX.size());
+        // 2. DIBUJAR GRÁFICA SEMANAL (Barras Agrupadas)
+        calcularGraficaSemanal(dailyBpm, dailyOxi);
     }
 
-    private void actualizarGraficaDePromedios(LineChart chart, List<Entry> entries, String colorHex) {
-        if (chart == null || entries.isEmpty()) return;
-        LineDataSet dataSet = new LineDataSet(entries, "Historial");
-        dataSet.setHighlightEnabled(true);
-        dataSet.setDrawHighlightIndicators(false);
-        dataSet.setColor(Color.parseColor(colorHex));
-        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
-        dataSet.setDrawFilled(true);
-        dataSet.setDrawCircles(true);
-        dataSet.setCircleColor(Color.parseColor(colorHex));
-        dataSet.setCircleRadius(8f);
-        dataSet.setCircleHoleRadius(4f);
-        dataSet.setLineWidth(3f);
-        dataSet.setFillColor(Color.parseColor(colorHex));
-        dataSet.setFillAlpha(50);
-        dataSet.setDrawValues(false);
+    private void actualizarGraficaDiaria(LineChart chart, List<Entry> bpmEntries, List<Entry> oxiEntries) {
+        if (chart == null || bpmEntries.isEmpty()) return;
 
-        chart.setData(new LineData(dataSet));
-        chart.setMaxHighlightDistance(35f);
+        LineDataSet setBpm = new LineDataSet(bpmEntries, "Pulso (BPM)");
+        setBpm.setColor(Color.parseColor("#23608C"));
+        setBpm.setCircleColor(Color.parseColor("#23608C"));
+        setBpm.setLineWidth(3f);
+        setBpm.setCircleRadius(5f);
+        setBpm.setDrawValues(false);
+
+        LineDataSet setOxi = new LineDataSet(oxiEntries, "Oxigenación (%)");
+        setOxi.setColor(Color.parseColor("#7DB9A9"));
+        setOxi.setCircleColor(Color.parseColor("#7DB9A9"));
+        setOxi.setLineWidth(3f);
+        setOxi.setCircleRadius(5f);
+        setOxi.setDrawValues(false);
+
+        LineData data = new LineData(setBpm, setOxi);
+        chart.setData(data);
         chart.invalidate();
     }
 
-    private void setupGrafica(LineChart chart, String colorHex, String unidadY, float granularidadY, float maxValY, String titulo) {
-        if (chart == null) return;
+    private void calcularGraficaSemanal(List<Entry> dailyBpm, List<Entry> dailyOxi) {
+        List<BarEntry> weeklyBpm = new ArrayList<>();
+        List<BarEntry> weeklyOxi = new ArrayList<>();
+        List<String> etiquetasSemanas = new ArrayList<>();
 
-        chart.setExtraOffsets(5, 45, 12, 35);
+        int totalDias = dailyBpm.size();
+        int startIndex = Math.max(0, totalDias - 28);
 
-        Description desc = new Description();
-        desc.setText(titulo);
-        desc.setTextSize(13f);
-        desc.setTextColor(Color.parseColor("#23608C"));
-        desc.setTypeface(Typeface.DEFAULT_BOLD);
-        desc.setTextAlign(Paint.Align.CENTER);
+        int weekIdx = 0;
+        float sumBpm = 0, sumOxi = 0;
+        int count = 0;
 
-        chart.post(() -> {
-            desc.setPosition(chart.getWidth() / 2f, 40f);
-            chart.setDescription(desc);
-            chart.invalidate();
+        for (int i = startIndex; i < totalDias; i++) {
+            sumBpm += dailyBpm.get(i).getY();
+            sumOxi += dailyOxi.get(i).getY();
+            count++;
+
+            if (count == 7 || i == totalDias - 1) {
+                weeklyBpm.add(new BarEntry(weekIdx, sumBpm / count));
+                weeklyOxi.add(new BarEntry(weekIdx, sumOxi / count));
+                etiquetasSemanas.add("Sem " + (weekIdx + 1));
+
+                sumBpm = 0; sumOxi = 0; count = 0;
+                weekIdx++;
+            }
+        }
+
+        if (weeklyBpm.isEmpty()) return;
+
+        BarDataSet setBpm = new BarDataSet(weeklyBpm, "Pulso (BPM)");
+        setBpm.setColor(Color.parseColor("#23608C"));
+        setBpm.setDrawValues(false);
+
+        BarDataSet setOxi = new BarDataSet(weeklyOxi, "Oxigenación (%)");
+        setOxi.setColor(Color.parseColor("#7DB9A9"));
+        setOxi.setDrawValues(false);
+
+        BarData data = new BarData(setBpm, setOxi);
+
+        // Ajustes para agrupar las barras una junto a la otra
+        float groupSpace = 0.2f;
+        float barSpace = 0.05f;
+        float barWidth = 0.35f;
+        // (0.35 + 0.05) * 2 + 0.2 = 1.0 (Obligatorio para que cuadren las barras)
+
+        data.setBarWidth(barWidth);
+        chartSemanal.setData(data);
+        chartSemanal.groupBars(0f, groupSpace, barSpace);
+
+        XAxis xAxis = chartSemanal.getXAxis();
+        xAxis.setCenterAxisLabels(true); // Centrar etiquetas debajo del grupo
+        xAxis.setAxisMinimum(0f);
+        xAxis.setAxisMaximum(etiquetasSemanas.size());
+        xAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                int index = (int) value;
+                return (index >= 0 && index < etiquetasSemanas.size()) ? etiquetasSemanas.get(index) : "";
+            }
         });
 
-        chart.getAxisRight().setEnabled(false);
-        chart.getLegend().setEnabled(false);
+        chartSemanal.invalidate();
+    }
+
+    // Usamos BarLineChartBase para que aplique tanto a LineChart como a BarChart
+    private void setupGrafica(BarLineChartBase<?> chart) {
+        if (chart == null) return;
+
+        chart.getDescription().setEnabled(false);
+
+        // HABILITAR ZOOM Y DESPLAZAMIENTO
         chart.setTouchEnabled(true);
         chart.setDragEnabled(true);
         chart.setScaleEnabled(true);
-        chart.setDoubleTapToZoomEnabled(false);
+        chart.setPinchZoom(true);
 
-        final SaludMarkerView mv = new SaludMarkerView(this, R.layout.marker_view, unidadY);
+        // HABILITAR MARCADOR AL TOCAR
+        CustomMarkerView mv = new CustomMarkerView(this, R.layout.marker_view);
         mv.setChartView(chart);
         chart.setMarker(mv);
-
-        chart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
-            @Override
-            public void onValueSelected(Entry e, Highlight h) {
-                hideHandler.removeCallbacksAndMessages(null);
-                mv.setCustomAlpha(255);
-                chart.invalidate();
-                hideHandler.postDelayed(() -> {
-                    ValueAnimator fadeAnim = ValueAnimator.ofInt(255, 0);
-                    fadeAnim.setDuration(800);
-                    fadeAnim.addUpdateListener(animation -> {
-                        int alphaValue = (int) animation.getAnimatedValue();
-                        mv.setCustomAlpha(alphaValue);
-                        chart.invalidate();
-                    });
-                    fadeAnim.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            chart.highlightValue(null);
-                            mv.setCustomAlpha(255);
-                        }
-                    });
-                    fadeAnim.start();
-                }, 3000);
-            }
-            @Override
-            public void onNothingSelected() {
-                hideHandler.removeCallbacksAndMessages(null);
-            }
-        });
 
         XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
         xAxis.setGranularity(1f);
-        xAxis.setTextSize(11f);
-        xAxis.setLabelRotationAngle(-45);
         xAxis.setTextColor(Color.GRAY);
-        xAxis.setAvoidFirstLastClipping(true);
-
-        xAxis.setValueFormatter(new ValueFormatter() {
-            @Override
-            public String getFormattedValue(float value) {
-                int index = (int) value;
-                return (index >= 0 && index < fechasEjeX.size()) ? fechasEjeX.get(index) : "";
-            }
-        });
 
         YAxis leftAxis = chart.getAxisLeft();
+        leftAxis.setAxisMinimum(0f);
+        leftAxis.setAxisMaximum(150f);
         leftAxis.setDrawGridLines(true);
         leftAxis.setGridColor(Color.LTGRAY);
-        leftAxis.setTextColor(Color.parseColor(colorHex));
-        leftAxis.setTextSize(12f);
-        leftAxis.setAxisMinimum(0f);
-        leftAxis.setAxisMaximum(maxValY);
-        leftAxis.setGranularity(granularidadY);
-        leftAxis.setGranularityEnabled(true);
-        leftAxis.setValueFormatter(new ValueFormatter() {
-            @Override
-            public String getFormattedValue(float value) {
-                return (int) value + " " + unidadY;
-            }
-        });
+
+        chart.getAxisRight().setEnabled(false);
+
+        Legend legend = chart.getLegend();
+        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
+        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
+        legend.setOrientation(Legend.LegendOrientation.VERTICAL);
+        legend.setDrawInside(true);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (handlerMonitoreo != null && runnableMonitoreo != null) {
+            handlerMonitoreo.removeCallbacks(runnableMonitoreo);
+        }
+    }
+
+    // CLASE INTERNA PARA EL GLOBO DE INFORMACIÓN AL TOCAR LA GRÁFICA
+    public static class CustomMarkerView extends MarkerView {
+        private TextView tvContent;
+
+        public CustomMarkerView(Context context, int layoutResource) {
+            super(context, layoutResource);
+            tvContent = findViewById(R.id.tvContent);
+        }
+
+        @Override
+        public void refreshContent(Entry e, Highlight highlight) {
+            tvContent.setText(String.format(Locale.getDefault(), "Valor: %.1f", e.getY()));
+            super.refreshContent(e, highlight);
+        }
+
+        @Override
+        public MPPointF getOffset() {
+            // Centra el globo encima del punto seleccionado
+            return new MPPointF(-(getWidth() / 2f), -getHeight());
+        }
+    }
+
+    // --- BASE DE DATOS LOCAL ---
     private static class HealthDBHelper extends SQLiteOpenHelper {
-        private static final String DB_NAME = "VitaSalud.db";
+        private static final String DB_NAME = "VitaSaludFamiliar.db";
         public HealthDBHelper(Context context) { super(context, DB_NAME, null, 2); }
 
         @Override
