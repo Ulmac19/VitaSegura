@@ -6,16 +6,18 @@ import android.bluetooth.*;
 import android.bluetooth.le.*;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.*;
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
-import androidx.core.app.ActivityCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class PulseraActivity extends AppCompatActivity {
@@ -30,6 +32,14 @@ public class PulseraActivity extends AppCompatActivity {
     private Button btnBuscar, btnConectar;
     private ProgressBar progressBar;
     private ImageView ivPulseraLogo;
+
+    // --- CONFIGURACIÓN DE TUS MAC ---
+    private final String MAC_PULSERA_1 = "1C:DB:D4:C6:4F:5A";
+    private final String MAC_PULSERA_2 = "88:56:A6:5C:2E:E6";
+
+    // Listas para manejar los múltiples hallazgos
+    private List<BluetoothDevice> dispositivosEncontrados = new ArrayList<>();
+    private List<String> nombresParaMostrar = new ArrayList<>();
 
     private final UUID SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
     private final UUID TX_CHAR_UUID = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
@@ -50,15 +60,6 @@ public class PulseraActivity extends AppCompatActivity {
         tvMensajeVinculado = findViewById(R.id.tv_mensaje_vinculado);
         ivPulseraLogo = findViewById(R.id.iv_pulsera_logo);
 
-        View mainView = findViewById(R.id.main);
-        if (mainView != null) {
-            ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
-                androidx.core.graphics.Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-                return insets;
-            });
-        }
-
         android.bluetooth.BluetoothManager systemBTManager = (android.bluetooth.BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         if (systemBTManager != null) {
             bluetoothAdapter = systemBTManager.getAdapter();
@@ -74,40 +75,71 @@ public class PulseraActivity extends AppCompatActivity {
 
     private void iniciarEscaneo() {
         if (bleScanner == null) return;
+
+        dispositivosEncontrados.clear();
+        nombresParaMostrar.clear();
         cvDispositivo.setVisibility(View.INVISIBLE);
         progressBar.setVisibility(View.VISIBLE);
         btnBuscar.setText("Buscando...");
-        try { bleScanner.startScan(scanCallback); } catch (SecurityException e) { e.printStackTrace(); }
+
+        try {
+            bleScanner.startScan(scanCallback);
+            // Esperamos 4 segundos para captar ambos dispositivos antes de mostrar la lista
+            new Handler().postDelayed(this::detenerEscaneoYMostrarOpciones, 4000);
+        } catch (SecurityException e) { e.printStackTrace(); }
     }
 
     private final ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             BluetoothDevice device = result.getDevice();
-            @SuppressLint("MissingPermission") String name = device.getName();
+            String address = device.getAddress();
 
-            // Si el nombre es nulo, intentamos obtenerlo del paquete de anuncio real
-            if (name == null && result.getScanRecord() != null) {
-                name = result.getScanRecord().getDeviceName();
-            }
-
-            if (name != null && name.equals("ESP32-C3-Salud")) {
-                targetDevice = device;
-
-                // Creamos esta variable final para que la lambda no marque error
-                final String nombreFinal = name;
-
-                runOnUiThread(() -> {
-                    tvNombre.setText(nombreFinal); // Usamos la variable final aquí
-                    tvMAC.setText(device.getAddress());
-                    cvDispositivo.setVisibility(View.VISIBLE);
-                    progressBar.setVisibility(View.GONE);
-                    btnBuscar.setText("Buscar Dispositivos");
-                    try { bleScanner.stopScan(scanCallback); } catch (SecurityException e) {}
-                });
+            if (address.equalsIgnoreCase(MAC_PULSERA_1) || address.equalsIgnoreCase(MAC_PULSERA_2)) {
+                if (!dispositivosEncontrados.contains(device)) {
+                    dispositivosEncontrados.add(device);
+                    @SuppressLint("MissingPermission") String name = device.getName();
+                    if (name == null && result.getScanRecord() != null) {
+                        name = result.getScanRecord().getDeviceName();
+                    }
+                    nombresParaMostrar.add((name != null ? name : "Pulsera Vita") + "\n" + address);
+                }
             }
         }
     };
+
+    private void detenerEscaneoYMostrarOpciones() {
+        try { bleScanner.stopScan(scanCallback); } catch (SecurityException e) {}
+
+        runOnUiThread(() -> {
+            progressBar.setVisibility(View.GONE);
+            btnBuscar.setText("Buscar Dispositivos");
+
+            if (dispositivosEncontrados.isEmpty()) {
+                Toast.makeText(this, "No se encontraron tus pulseras", Toast.LENGTH_SHORT).show();
+            } else {
+                // Mostramos el diálogo para elegir entre las encontradas
+                mostrarDialogoSeleccion();
+            }
+        });
+    }
+
+    private void mostrarDialogoSeleccion() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Selecciona tu dispositivo");
+
+        String[] items = nombresParaMostrar.toArray(new String[0]);
+        builder.setItems(items, (dialog, which) -> {
+            // Al elegir una, llenamos el CardView con sus datos
+            targetDevice = dispositivosEncontrados.get(which);
+            @SuppressLint("MissingPermission") String name = targetDevice.getName();
+            tvNombre.setText(name != null ? name : "Pulsera Vita");
+            tvMAC.setText(targetDevice.getAddress());
+            cvDispositivo.setVisibility(View.VISIBLE);
+        });
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
+    }
 
     private void conectarDispositivo() {
         if (targetDevice == null) return;
@@ -123,7 +155,6 @@ public class PulseraActivity extends AppCompatActivity {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 BluetoothServiceManager.getInstance().setGatt(gatt);
-                // Pedir MTU alto para recibir tramas de datos completas
                 gatt.requestMtu(512);
 
                 runOnUiThread(() -> {
