@@ -75,7 +75,7 @@
                         android:id="@+id/et_frecuencia"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@android:color/transparent"
+                        android:background="@android:color/white"
                         android:hint="Frecuencia (ej. Cada 8 horas)"
                         android:focusable="false"
                         android:clickable="true"
