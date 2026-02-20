@@ -284,7 +284,7 @@ public class InformacionAbueloActivity extends AppCompatActivity {
         }
     }
 
-    // CLASE INTERNA PARA EL GLOBO DE INFORMACIÓN AL TOCAR LA GRÁFICA
+
     public static class CustomMarkerView extends MarkerView {
         private TextView tvContent;
 
@@ -295,14 +295,39 @@ public class InformacionAbueloActivity extends AppCompatActivity {
 
         @Override
         public void refreshContent(Entry e, Highlight highlight) {
-            tvContent.setText(String.format(Locale.getDefault(), "Valor: %.1f", e.getY()));
+            int indiceDataset = highlight.getDataSetIndex();
+            String unidad = (indiceDataset == 0) ? " BPM" : " %";
+
+            tvContent.setText(String.format(Locale.getDefault(), "%d%s", (int) e.getY(), unidad));
             super.refreshContent(e, highlight);
         }
 
         @Override
         public MPPointF getOffset() {
-            // Centra el globo encima del punto seleccionado
-            return new MPPointF(-(getWidth() / 2f), -getHeight());
+            return new MPPointF(-(getWidth() / 2f), -getHeight() - 15f);
+        }
+
+        //Dibujar el fondo oscuro debajo del texto
+        @Override
+        public void draw(android.graphics.Canvas canvas, float posx, float posy) {
+            MPPointF offset = getOffsetForDrawingAtPoint(posx, posy);
+            int saveId = canvas.save();
+
+
+            canvas.translate(posx + offset.x, posy + offset.y);
+
+            android.graphics.Paint paint = new android.graphics.Paint();
+            paint.setColor(Color.parseColor("#CC000000")); // Negro al 80% de opacidad
+            paint.setStyle(android.graphics.Paint.Style.FILL);
+            paint.setAntiAlias(true); // Bordes suaves
+
+            //Rectángulo redondeado
+            android.graphics.RectF rect = new android.graphics.RectF(0, 0, getWidth(), getHeight());
+            canvas.drawRoundRect(rect, 15f, 15f, paint);
+
+            // Dibujar el contenido
+            draw(canvas);
+            canvas.restoreToCount(saveId);
         }
     }
 
