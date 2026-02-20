@@ -37,8 +37,6 @@ public class ConfiguracionActivity extends AppCompatActivity {
         if(freqSalud == 5) rgSalud.check(R.id.rb_salud_5);
         else if(freqSalud == 10) rgSalud.check(R.id.rb_salud_10);
         else if(freqSalud == 15) rgSalud.check(R.id.rb_salud_15);
-
-
         rgSalud.setOnCheckedChangeListener((group, checkedId) -> {
             int minutos = 5;
             if(checkedId == R.id.rb_salud_10) minutos = 10;
@@ -46,6 +44,19 @@ public class ConfiguracionActivity extends AppCompatActivity {
 
             prefs.edit().putInt("frecuencia_salud", minutos).apply();
         });
+
+
+        int freqUbicacion = prefs.getInt("frecuencia_ubicacion", 5);
+        if (freqUbicacion == 5) rgUbicacion.check(R.id.rb_ubicacion_5);
+        else if (freqUbicacion == 10) rgUbicacion.check(R.id.rb_ubicacion_10);
+
+        rgUbicacion.setOnCheckedChangeListener((group, checkedId) -> {
+            int minutos = (checkedId == R.id.rb_ubicacion_10) ? 10 : 5;
+            prefs.edit().putInt("frecuencia_ubicacion", minutos).apply();
+        });
+
+
+
         // Vincular vistas
         etBuscar = findViewById(R.id.et_buscar_config);
         ivClearSearch = findViewById(R.id.iv_clear_search);

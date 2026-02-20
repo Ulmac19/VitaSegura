@@ -11,9 +11,16 @@ import java.util.List;
 public class HistorialUbicacionAdapter extends RecyclerView.Adapter<HistorialUbicacionAdapter.ViewHolder> {
 
     private List<Ubicacion> historial;
+    private OnItemClickListener listener;
 
-    public HistorialUbicacionAdapter(List<Ubicacion> historial) {
+    // Interfaz para clics
+    public interface OnItemClickListener {
+        void onItemClick(Ubicacion ubicacion);
+    }
+
+    public HistorialUbicacionAdapter(List<Ubicacion> historial, OnItemClickListener listener) {
         this.historial = historial;
+        this.listener = listener;
     }
 
     @NonNull
@@ -28,6 +35,9 @@ public class HistorialUbicacionAdapter extends RecyclerView.Adapter<HistorialUbi
         Ubicacion u = historial.get(position);
         holder.tvDireccion.setText(u.getDireccion());
         holder.tvFecha.setText(u.getFechaHora());
+
+        // Evento clic para mover el mapa
+        holder.itemView.setOnClickListener(v -> listener.onItemClick(u));
     }
 
     @Override

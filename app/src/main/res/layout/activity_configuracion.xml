@@ -100,8 +100,8 @@
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Actualización de la ubicación" android:textColor="@color/azul_oscuro" android:textSize="18sp" android:textStyle="bold" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="¿Cada cuánto quieres que se actualice la ubicación de tu adulto mayor?" android:textColor="@color/azul_claro" android:textSize="14sp" />
                 <RadioGroup android:id="@+id/rg_ubicacion" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:layout_marginBottom="20dp">
-                    <RadioButton android:layout_width="match_parent" android:layout_height="wrap_content" android:text="5 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
-                    <RadioButton android:layout_width="match_parent" android:layout_height="wrap_content" android:text="10 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                    <RadioButton android:id="@+id/rb_ubicacion_5" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="5 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                    <RadioButton android:id="@+id/rb_ubicacion_10" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="10 minutos" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
                 </RadioGroup>
             </LinearLayout>
 
