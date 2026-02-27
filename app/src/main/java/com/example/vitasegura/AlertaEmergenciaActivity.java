@@ -15,6 +15,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class AlertaEmergenciaActivity extends AppCompatActivity {
 
     private TextView tvContador;
@@ -74,11 +81,22 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
     }
 
     private void enviarAlertaFirebase() {
-        // Aquí irá la lógica para subir la ubicación y signos vitales a Firebase
-        Toast.makeText(this, "¡AYUDA SOLICITADA!", Toast.LENGTH_LONG).show();
-        Intent intent = new Intent(AlertaEmergenciaActivity.this, MainAdultoActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(intent);
-        finish();
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
+
+        String miUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference refAlertas = FirebaseDatabase.getInstance().getReference()
+                .child("Usuarios").child(miUid).child("EmergenciasPendientes");
+
+        // Creamos el "paquete" de alerta
+        Map<String, Object> alerta = new HashMap<>();
+        alerta.put("tipo", "SOS_BOTON");
+        alerta.put("mensaje", "¡Botón de pánico presionado! Entra a la app para ver la ubicación.");
+        alerta.put("timestamp", System.currentTimeMillis());
+
+        // Subimos a Firebase
+        refAlertas.push().setValue(alerta).addOnCompleteListener(task -> {
+            Toast.makeText(this, "¡AYUDA SOLICITADA AL CUIDADOR!", Toast.LENGTH_LONG).show();
+            finish(); // Regresamos al menú
+        });
     }
 }
