@@ -18,16 +18,23 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class FormularioMedicamentoActivity extends AppCompatActivity {
 
     private EditText etNombre, etFrecuencia, etHora, etDosis, etNotas;
-    private TextView tvTitulo;
     private Button btnAccion;
-    private boolean esEdicion = false;
-    private boolean modoAgregarUsuario = false;
+    private TextView tvTitulo;
+
+    private DatabaseReference mDatabase;
+    private String uidAbuelo;
+    private String medicamentoIdEditar = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,46 +42,40 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         androidx.activity.EdgeToEdge.enable(this);
         setContentView(R.layout.activity_formulario_medicamento);
 
-        // 1. Vincular vistas
+        // Vincular vistas
         tvTitulo = findViewById(R.id.tv_titulo_formulario);
-        btnAccion = findViewById(R.id.btn_accion);
         etNombre = findViewById(R.id.et_nombre);
         etFrecuencia = findViewById(R.id.et_frecuencia);
         etHora = findViewById(R.id.et_hora);
         etDosis = findViewById(R.id.et_dosis);
         etNotas = findViewById(R.id.et_notas);
+        btnAccion = findViewById(R.id.btn_accion);
 
-        // Acceder a la flecha del RelativeLayout de frecuencia
-        ImageView ivFlecha = (ImageView) ((RelativeLayout) etFrecuencia.getParent()).getChildAt(1);
+        findViewById(R.id.iv_back_form).setOnClickListener(v -> finish());
+        mDatabase = FirebaseDatabase.getInstance().getReference();
 
-        // 2. Revisar si venimos de "Agregar Usuario" o de "Medicamentos"
-        Intent intent = getIntent();
-        if (intent != null && "AGREGAR_USUARIO".equals(intent.getStringExtra("modo"))) {
-            configurarModoUsuario(ivFlecha);
-        } else {
-            configurarModoMedicamento();
-            // Lógica de edición (solo para medicamentos)
-            if (intent != null && intent.hasExtra("nombre")) {
-                esEdicion = true;
-                tvTitulo.setText("Editar\nRecordatorio");
-                btnAccion.setText("Aceptar");
-                rellenarDatosEdicion(intent);
-            }
+        // Recibir datos del Intent
+        uidAbuelo = getIntent().getStringExtra("UID_ABUELO");
+        medicamentoIdEditar = getIntent().getStringExtra("MEDICAMENTO_ID");
+
+        // Configurar Selector de Hora
+        etHora.setOnClickListener(v -> mostrarTimePicker());
+
+        // Configurar Selector de Frecuencia
+        etFrecuencia.setOnClickListener(v -> mostrarDialogoFrecuencia());
+
+        // Si es Modo Edición, rellenar los campos
+        if (medicamentoIdEditar != null) {
+            tvTitulo.setText("Editar\nRecordatorio");
+            btnAccion.setText("Guardar Cambios");
+            etNombre.setText(getIntent().getStringExtra("NOMBRE"));
+            etFrecuencia.setText(getIntent().getStringExtra("FRECUENCIA"));
+            etHora.setText(getIntent().getStringExtra("HORA"));
+            etDosis.setText(getIntent().getStringExtra("DOSIS"));
+            etNotas.setText(getIntent().getStringExtra("NOTAS"));
         }
 
-        // Botón atrás común
-        findViewById(R.id.iv_back_form).setOnClickListener(v -> finish());
-
-        // Botón acción (Agregar/Aceptar)
-        btnAccion.setOnClickListener(v -> {
-            if (modoAgregarUsuario) {
-                validarYAgregarUsuario();
-            } else {
-                String mensaje = esEdicion ? "Cambios guardados" : "Nuevo recordatorio agregado";
-                Toast.makeText(this, mensaje, Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        });
+        btnAccion.setOnClickListener(v -> guardarMedicamento());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -83,91 +84,60 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         });
     }
 
-    private void configurarModoUsuario(ImageView ivFlecha) {
-        modoAgregarUsuario = true;
-        tvTitulo.setText("Agregar Nuevo\nUsuario");
-        btnAccion.setText("Agregar");
+    private void mostrarTimePicker() {
+        Calendar calendario = Calendar.getInstance();
+        int horaActual = calendario.get(Calendar.HOUR_OF_DAY);
+        int minutoActual = calendario.get(Calendar.MINUTE);
 
-        // 1. Extraer la tipografía y el tamaño del campo Nombre (que es el original)
-        android.graphics.Typeface tipografíaOriginal = etNombre.getTypeface();
-        float tamanoOriginal = etNombre.getTextSize(); // Esto obtiene el tamaño en píxeles
-
-        // Campo Nombre (Ya tiene el estilo correcto)
-        etNombre.setHint("Nombre completo");
-
-        // Campo Correo electrónico
-        etFrecuencia.setHint("Correo electrónico");
-        etFrecuencia.setOnClickListener(null);
-        etFrecuencia.setFocusableInTouchMode(true);
-        etFrecuencia.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        // Forzar estilo original
-        etFrecuencia.setTypeface(tipografíaOriginal);
-        etFrecuencia.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, tamanoOriginal);
-        ivFlecha.setVisibility(View.GONE);
-
-        // Campo Contraseña
-        etHora.setHint("Contraseña");
-        etHora.setOnClickListener(null);
-        etHora.setFocusableInTouchMode(true);
-        etHora.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        // Forzar estilo original (Evita que se ponga en negrita o monospace)
-        etHora.setTypeface(tipografíaOriginal);
-        etHora.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, tamanoOriginal);
-
-        // Campo Confirmar contraseña
-        etDosis.setHint("Confirmar contraseña");
-        etDosis.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        // Forzar estilo original
-        etDosis.setTypeface(tipografíaOriginal);
-        etDosis.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, tamanoOriginal);
-
-        // Campo Teléfono
-        etNotas.setHint("Teléfono");
-        etNotas.setInputType(InputType.TYPE_CLASS_PHONE);
-        // Forzar estilo original
-        etNotas.setTypeface(tipografíaOriginal);
-        etNotas.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, tamanoOriginal);
+        TimePickerDialog timePickerDialog = new TimePickerDialog(this,
+                (view, hourOfDay, minute) -> {
+                    String horaFormateada = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute);
+                    etHora.setText(horaFormateada);
+                }, horaActual, minutoActual, true);
+        timePickerDialog.show();
     }
 
-    private void configurarModoMedicamento() {
-        etFrecuencia.setOnClickListener(v -> configurarFrecuencia());
-        etHora.setOnClickListener(v -> mostrarReloj());
+    private void mostrarDialogoFrecuencia() {
+        String[] opciones = {"Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Solo si hay dolor"};
+        new AlertDialog.Builder(this)
+                .setTitle("Selecciona Frecuencia")
+                .setItems(opciones, (dialog, which) -> etFrecuencia.setText(opciones[which]))
+                .show();
     }
 
-    private void rellenarDatosEdicion(Intent intent) {
-        etNombre.setText(intent.getStringExtra("nombre"));
-        etFrecuencia.setText(intent.getStringExtra("frecuencia"));
-        etHora.setText(intent.getStringExtra("hora"));
-        etDosis.setText(intent.getStringExtra("dosis"));
-        etNotas.setText(intent.getStringExtra("notas"));
-    }
+    private void guardarMedicamento() {
+        String nombre = etNombre.getText().toString().trim();
+        String frecuencia = etFrecuencia.getText().toString().trim();
+        String hora = etHora.getText().toString().trim();
+        String dosis = etDosis.getText().toString().trim();
+        String notas = etNotas.getText().toString().trim();
 
-    private void validarYAgregarUsuario() {
-        String pass = etHora.getText().toString();
-        String confirmPass = etDosis.getText().toString();
-
-        if (pass.isEmpty() || !pass.equals(confirmPass)) {
-            Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "Nuevo usuario agregado", Toast.LENGTH_SHORT).show();
-            finish();
+        if (nombre.isEmpty() || frecuencia.isEmpty() || hora.isEmpty() || dosis.isEmpty()) {
+            Toast.makeText(this, "Llena todos los campos obligatorios", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        // Si es nuevo, generamos un ID. Si es edición, usamos el existente.
+        String medId = (medicamentoIdEditar != null) ? medicamentoIdEditar : mDatabase.push().getKey();
+
+        Medicamento nuevoMedicamento = new Medicamento(medId, nombre, frecuencia, hora, dosis, notas);
+
+        // Guardar en Firebase
+        mDatabase.child("Usuarios").child(uidAbuelo).child("Medicamentos").child(medId).setValue(nuevoMedicamento)
+                .addOnSuccessListener(aVoid -> {
+
+                    if (medicamentoIdEditar == null) {
+                        Map<String, Object> notif = new HashMap<>();
+                        notif.put("titulo", "Nuevo Medicamento Asignado");
+                        notif.put("mensaje", "Debes tomar " + nombre + " (" + dosis + ")");
+                        notif.put("timestamp", System.currentTimeMillis());
+
+                        mDatabase.child("Usuarios").child(uidAbuelo).child("NotificacionesPendientes").push().setValue(notif);
+                    }
+
+                    Toast.makeText(this, "Medicamento guardado", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
     }
 
-    private void configurarFrecuencia() {
-        final String[] opciones = {"Una vez al día", "Dos veces al día (Cada 12 horas)",
-                "Tres veces al día (Cada 8 horas)", "Cuatro veces al día (Cada 6 horas)",
-                "Cada 2 días", "Una vez a la semana"};
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Frecuencia de toma");
-        builder.setItems(opciones, (dialog, which) -> etFrecuencia.setText(opciones[which]));
-        builder.show();
-    }
-
-    private void mostrarReloj() {
-        final Calendar c = Calendar.getInstance();
-        new TimePickerDialog(this, (view, hourOfDay, minute) -> {
-            etHora.setText(String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
-        }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show();
-    }
 }

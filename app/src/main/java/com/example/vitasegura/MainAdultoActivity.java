@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainAdultoActivity extends AppCompatActivity {
 
@@ -101,6 +102,13 @@ public class MainAdultoActivity extends AppCompatActivity {
             startForegroundService(serviceIntent);
         } else {
             startService(serviceIntent);
+        }
+
+        Intent servicioIntent = new Intent(this, ServicioNotificacionesAbuelo.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(servicioIntent);
+        } else {
+            startService(servicioIntent);
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
