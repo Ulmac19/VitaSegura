@@ -80,10 +80,10 @@ public class LoginActivity extends AppCompatActivity {
         mAuth.signInWithEmailAndPassword(correo, pass)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // 1. Obtener el UID del usuario que acaba de entrar
+                        //Obtener el UID del usuario que acaba de entrar
                         String uid = mAuth.getCurrentUser().getUid();
 
-                        // 2. Consultar su rol en la Realtime Database
+                        // Consultar su rol en la Realtime Database
                         mDatabase.child("Usuarios").child(uid).get().addOnCompleteListener(dbTask -> {
                             if (dbTask.isSuccessful()) {
                                 // Extraemos el valor de esPrincipal (tu clase Usuario)

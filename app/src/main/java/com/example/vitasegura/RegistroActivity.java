@@ -82,7 +82,8 @@ public class RegistroActivity extends AppCompatActivity {
                         String uid = mAuth.getCurrentUser().getUid();
                         DatabaseReference mDatabase = FirebaseDatabase.getInstance().getReference();
 
-                        Usuario nuevoUsuario = new Usuario(nombre, correo, telefono, esPrincipal);
+                        // AQUÍ ESTÁ EL CAMBIO: Agregamos 'uid' como el primer parámetro
+                        Usuario nuevoUsuario = new Usuario(uid, nombre, correo, telefono, esPrincipal);
 
                         mDatabase.child("Usuarios").child(uid).setValue(nuevoUsuario)
                                 .addOnCompleteListener(dbTask -> {
