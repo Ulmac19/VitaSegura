@@ -319,10 +319,6 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
 
             mDatabase.child("Usuarios").child(uidAdulto).child("MonitoreoActual").setValue(salud);
         }
-
-
-
-
     }
 
     private void subirUbicacionAFirebase(double lat, double lon) {

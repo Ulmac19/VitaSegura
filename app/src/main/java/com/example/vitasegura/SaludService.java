@@ -9,17 +9,37 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
+import com.google.firebase.database.ValueEventListener;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 public class SaludService extends Service {
     private DatabaseReference mDatabase;
     private String uidAdulto;
+
+    // --- Variables para Medicamentos ---
+    private List<Medicamento> listaMeds = new ArrayList<>();
+    private Handler medHandler = new Handler(Looper.getMainLooper());
+    private Runnable medRunnable;
+    private String ultimaHoraNotificada = "";
 
     private final BroadcastReceiver receptorBluetooth = new BroadcastReceiver() {
         @Override
@@ -35,6 +55,7 @@ public class SaludService extends Service {
         mDatabase = FirebaseDatabase.getInstance().getReference();
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             uidAdulto = FirebaseAuth.getInstance().getCurrentUser().getUid();
+            iniciarVigilanciaMedicamentos();
         }
 
         // Registrar el receptor para captar datos del BluetoothServiceManager
@@ -60,17 +81,80 @@ public class SaludService extends Service {
         Notification notification = new NotificationCompat.Builder(this, canalId)
                 .setContentTitle("VitaSegura: Monitoreo Activo")
                 .setContentText("Tu pulsera está enviando datos de salud en tiempo real")
-                .setSmallIcon(R.drawable.atras) // Asegúrate de que este icono exista
+                .setSmallIcon(R.drawable.atras)
                 .setOngoing(true)
                 .build();
 
         startForeground(1, notification);
     }
 
+    // --- Lógica de Notificación de Medicamentos ---
+    private void iniciarVigilanciaMedicamentos() {
+        // Escuchar medicamentos en tiempo real desde Firebase
+        mDatabase.child("Usuarios").child(uidAdulto).child("Medicamentos")
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        listaMeds.clear();
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+                            Medicamento m = ds.getValue(Medicamento.class);
+                            if (m != null) listaMeds.add(m);
+                        }
+                    }
+                    @Override public void onCancelled(@NonNull DatabaseError error) {}
+                });
+
+        // Tarea repetitiva cada 60 segundos
+        medRunnable = new Runnable() {
+            @Override
+            public void run() {
+                revisarHoraMedicamentos();
+                medHandler.postDelayed(this, 60000);
+            }
+        };
+        medHandler.post(medRunnable);
+    }
+
+    private void revisarHoraMedicamentos() {
+        String horaActual = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
+
+        // Evitar múltiples notificaciones en el mismo minuto
+        if (horaActual.equals(ultimaHoraNotificada)) return;
+
+        for (Medicamento med : listaMeds) {
+            if (med.getHora() != null && med.getHora().equals(horaActual)) {
+                dispararNotificacionMed(med);
+                ultimaHoraNotificada = horaActual;
+            }
+        }
+    }
+
+    private void dispararNotificacionMed(Medicamento med) {
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        String canalMedId = "canal_medicamentos";
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(canalMedId, "Recordatorios de Medicación", NotificationManager.IMPORTANCE_HIGH);
+            channel.enableVibration(true);
+            if (manager != null) manager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalMedId)
+                .setSmallIcon(R.drawable.atras) // Puedes cambiarlo por un icono de pastilla
+                .setContentTitle("¡Hora de tu medicamento!")
+                .setContentText("Es momento de tomar: " + med.getNombre() + " (" + med.getDosis() + ")")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(Notification.DEFAULT_ALL)
+                .setAutoCancel(true);
+
+        if (manager != null) {
+            manager.notify(med.getNombre().hashCode(), builder.build());
+        }
+    }
+
     private void procesarYEnviar(String rawData) {
         String cleanData = rawData.trim();
 
-        // Envío de Salud (BPM y SpO2)
         if (cleanData.contains("BPM:") && cleanData.contains("SpO2:")) {
             try {
                 String bpmStr = cleanData.split("BPM:")[1].trim().split(" ")[0];
@@ -84,7 +168,6 @@ public class SaludService extends Service {
             } catch (Exception e) {}
         }
 
-        // Envío de Ubicación (LAT y LON)
         if (cleanData.contains("LAT:") && cleanData.contains("LON:")) {
             try {
                 String[] partes = cleanData.split(" ");
@@ -103,31 +186,23 @@ public class SaludService extends Service {
             } catch (Exception e) {}
         }
 
-        // --- ENVÍO DE ALERTAS (CAÍDAS Y SOS) ---
         if (cleanData.contains("ALERTA:")) {
             try {
-                // Extraemos si es SOS o CAIDA
                 String tipoAlerta = cleanData.split("ALERTA:")[1].trim().split(" ")[0];
-
                 HashMap<String, Object> alerta = new HashMap<>();
                 alerta.put("tipo", tipoAlerta);
                 alerta.put("timestamp", ServerValue.TIMESTAMP);
-                alerta.put("leida", false); // Útil para que el familiar sepa si es nueva
-
-                // Guardamos en una rama especial de Alertas
+                alerta.put("leida", false);
                 mDatabase.child("Usuarios").child(uidAdulto).child("Alertas").setValue(alerta);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else {
-            // Opcional: Si no hay alerta en el mensaje actual, podemos limpiar la alerta en Firebase
-            // después de cierto tiempo o dejar que el familiar la borre manualmente.
         }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY; // El servicio se reinicia automáticamente si el sistema lo cierra
+        return START_STICKY;
     }
 
     @Override
@@ -136,6 +211,7 @@ public class SaludService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (medHandler != null && medRunnable != null) medHandler.removeCallbacks(medRunnable);
         unregisterReceiver(receptorBluetooth);
     }
 }
