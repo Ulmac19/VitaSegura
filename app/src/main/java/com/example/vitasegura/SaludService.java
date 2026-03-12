@@ -82,7 +82,7 @@ public class SaludService extends Service {
         Notification notification = new NotificationCompat.Builder(this, canalId)
                 .setContentTitle("VitaSegura: Monitoreo Activo")
                 .setContentText("Tu pulsera está enviando datos de salud en tiempo real")
-                .setSmallIcon(R.drawable.atras)
+                .setSmallIcon(R.drawable.pulsera)
                 .setOngoing(true)
                 .build();
 
@@ -148,7 +148,7 @@ public class SaludService extends Service {
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalMedId)
-                .setSmallIcon(R.drawable.atras)
+                .setSmallIcon(R.drawable.medicamentos_logo)
                 .setContentTitle("¡HORA DE MEDICAMENTO!") // Título en mayúsculas para mejor visibilidad
                 .setContentText("Toma tu: " + med.getNombre())
                 .setPriority(NotificationCompat.PRIORITY_MAX) // Prioridad máxima para que "flote" arriba (Heads-up)
