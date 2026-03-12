@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -135,20 +136,37 @@ public class SaludService extends Service {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(canalMedId, "Recordatorios de Medicación", NotificationManager.IMPORTANCE_HIGH);
+
+            // --- VIBRACIÓN ---
             channel.enableVibration(true);
+            channel.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 500}); // Patrón SOS o triple vibración larga
+
+            // --- PANTALLA ---
+            channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+
             if (manager != null) manager.createNotificationChannel(channel);
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalMedId)
-                .setSmallIcon(R.drawable.atras) // Puedes cambiarlo por un icono de pastilla
-                .setContentTitle("¡Hora de tu medicamento!")
-                .setContentText("Es momento de tomar: " + med.getNombre() + " (" + med.getDosis() + ")")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setDefaults(Notification.DEFAULT_ALL)
+                .setSmallIcon(R.drawable.atras)
+                .setContentTitle("¡HORA DE MEDICAMENTO!") // Título en mayúsculas para mejor visibilidad
+                .setContentText("Toma tu: " + med.getNombre())
+                .setPriority(NotificationCompat.PRIORITY_MAX) // Prioridad máxima para que "flote" arriba (Heads-up)
+                .setCategory(NotificationCompat.CATEGORY_ALARM) // Categoría de alarma para que el sistema le de prioridad
+                .setVibrate(new long[]{0, 500, 200, 500})
+                .setFullScreenIntent(null, true) // Esto ayuda a que el sistema intente despertar la pantalla
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true);
 
         if (manager != null) {
             manager.notify(med.getNombre().hashCode(), builder.build());
+
+            // --- CÓDIGO EXTRA PARA PRENDER LA PANTALLA ---
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm != null && !pm.isInteractive()) {
+                PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "VitaSegura:DespertarPantalla");
+                wl.acquire(5000); // Mantiene la pantalla encendida por 5 segundos
+            }
         }
     }
 
