@@ -79,16 +79,5 @@
             android:textSize="14sp"
             android:layout_marginBottom="30dp" />
 
-        <android.widget.Button
-            android:id="@+id/btn_cambiar_pass_perfil"
-            android:layout_width="174dp"
-            android:layout_height="53dp"
-            android:background="@drawable/boton_primario"
-            app:backgroundTint="#23608C"
-            android:text="Cambiar\nContraseña"
-            android:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp" />
-
     </LinearLayout>
 </LinearLayout>
