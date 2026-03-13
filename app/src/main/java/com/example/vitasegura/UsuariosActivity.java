@@ -107,10 +107,30 @@ public class UsuariosActivity extends AppCompatActivity {
         mDatabase.child("Vinculos").child(miUid).child("id_adulto_vinculado").get()
                 .addOnSuccessListener(snapshot -> {
                     if (snapshot.exists()) {
+                        //Se tiene un abuelo vinculado: cargamos toda la red
                         uidAbueloActual = snapshot.getValue(String.class);
                         cargarRedDeCuidadores(uidAbueloActual);
+                    }else{
+                        //No se tiene un abuelo vinculado: solo mi información
+                        cargarSoloMiInformacion();
                     }
                 });
+    }
+
+    private void cargarSoloMiInformacion() {
+        mDatabase.child("Usuarios").child(miUid).get().addOnSuccessListener(userSnap -> {
+            if (userSnap.exists()) {
+                listaUsuarios.clear();
+                Usuario u = userSnap.getValue(Usuario.class);
+                // Si el getValue(Usuario.class) te da problemas, usa el mapeo manual que ya tenías:
+                if (u != null) {
+                    u.setUid(miUid); // Aseguramos que tenga el UID
+                    listaUsuarios.add(u);
+                    indiceActual = 0;
+                    actualizarPantalla();
+                }
+            }
+        });
     }
 
     private void cargarRedDeCuidadores(String idAbuelo) {

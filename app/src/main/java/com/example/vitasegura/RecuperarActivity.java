@@ -2,6 +2,7 @@ package com.example.vitasegura;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,11 +15,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class RecuperarActivity extends AppCompatActivity {
 
     private EditText etCorreo;
     private Button btnEnviar;
-    private TextView tvContador;
+    private FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,34 +31,33 @@ public class RecuperarActivity extends AppCompatActivity {
 
         etCorreo = findViewById(R.id.et_recuperar_correo);
         btnEnviar = findViewById(R.id.btn_enviar_codigo);
-        tvContador = findViewById(R.id.tv_contador_codigo);
+        mAuth = FirebaseAuth.getInstance();
 
-        btnEnviar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String correo = etCorreo.getText().toString().trim();
-                if (correo.isEmpty()) {
-                    Toast.makeText(RecuperarActivity.this, "Ingresa un correo válido", Toast.LENGTH_SHORT).show();
-                } else {
-                    // Aquí integraremos el envío con Firebase después
-                    Toast.makeText(RecuperarActivity.this, "Código enviado a " + correo, Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        btnEnviar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // ... (validación de correo)
-                Intent intent = new Intent(RecuperarActivity.this, IngresarCodigoActivity.class);
-                startActivity(intent);
-            }
-        });
+        btnEnviar.setOnClickListener(v -> enviarEnlaceRecuperacion());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    private void enviarEnlaceRecuperacion() {
+        String correo = etCorreo.getText().toString().trim();
+
+        if (correo.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+            Toast.makeText(this, "Por favor ingresa un correo electrónico válido", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        mAuth.sendPasswordResetEmail(correo)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Toast.makeText(RecuperarActivity.this, "Se ha enviado un enlace de recuperación a tu correo", Toast.LENGTH_LONG).show();
+                        finish(); // Regresa al Login
+                    } else {
+                        Toast.makeText(RecuperarActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }

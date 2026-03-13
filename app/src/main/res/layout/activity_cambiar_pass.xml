@@ -43,11 +43,23 @@
             android:orientation="vertical">
 
             <EditText
+                android:id="@+id/et_pass_actual"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/edittext_bg"
+                android:hint="Contraseña Actual"
+                android:inputType="textPassword"
+                android:paddingStart="15dp"
+                android:textColor="@color/azul_oscuro"
+                android:textSize="14sp" />
+
+            <EditText
                 android:id="@+id/et_nueva_pass"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:background="@drawable/edittext_bg"
-                android:hint="Contraseña"
+                android:hint="Ingrese su nueva contraseña"
                 android:inputType="textPassword"
                 android:paddingStart="15dp"
                 android:textColor="@color/azul_oscuro"
@@ -58,9 +70,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="4dp"
-                android:text="Incluya una mayúscula, una minúscula, un número y un carácter especial"
+                android:text="Incluya al menos una mayúscula, una minúscula, un número y un carácter especial"
                 android:textColor="#716E6E"
-                android:textSize="8sp" />
+                android:textSize="9sp" />
 
             <EditText
                 android:id="@+id/et_confirmar_nueva_pass"
