@@ -13,10 +13,15 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 public class IngresarCodigoActivity extends AppCompatActivity {
 
     private EditText etCodigo;
     private Button btnVerificar;
+    private DatabaseReference mDatabase;
+    private String correoUsuario;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,21 +29,14 @@ public class IngresarCodigoActivity extends AppCompatActivity {
         setContentView(R.layout.activity_ingresar_codigo);
 
         etCodigo = findViewById(R.id.et_ingresar_codigo);
+        etCodigo = findViewById(R.id.et_ingresar_codigo);
         btnVerificar = findViewById(R.id.btn_verificar_codigo);
+        mDatabase = FirebaseDatabase.getInstance().getReference();
 
-        btnVerificar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String codigo = etCodigo.getText().toString().trim();
-                if (codigo.isEmpty()) {
-                    Toast.makeText(IngresarCodigoActivity.this, "Por favor, ingresa el código", Toast.LENGTH_SHORT).show();
-                } else {
-                    // Simulación de verificación exitosa
-                    Intent intent = new Intent(IngresarCodigoActivity.this, CambiarPassActivity.class);
-                    startActivity(intent);
-                }
-            }
-        });
+        // Recibimos el correo de la pantalla anterior
+        correoUsuario = getIntent().getStringExtra("correoUsuario");
+
+        btnVerificar.setOnClickListener(v -> verificarCodigo());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -46,4 +44,47 @@ public class IngresarCodigoActivity extends AppCompatActivity {
             return insets;
         });
     }
+
+    private void verificarCodigo() {
+        String codigoIngresado = etCodigo.getText().toString().trim();
+
+        if (codigoIngresado.isEmpty()) {
+            Toast.makeText(this, "Por favor ingresa el código", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // En Node.js guardamos el correo cambiando los puntos por guiones bajos
+        String emailKey = correoUsuario.replace(".", "_");
+
+        mDatabase.child("CodigosRecuperacion").child(emailKey).get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        String codigoGuardado = snapshot.child("codigo").getValue(String.class);
+                        Long expiracion = snapshot.child("expiresAt").getValue(Long.class);
+
+                        // 1. Validar que no esté expirado
+                        if (expiracion != null && System.currentTimeMillis() > expiracion) {
+                            Toast.makeText(this, "El código ha expirado. Solicita uno nuevo.", Toast.LENGTH_LONG).show();
+                        }
+                        // 2. Validar que sea correcto
+                        else if (codigoGuardado != null && codigoGuardado.equals(codigoIngresado)) {
+                            Toast.makeText(this, "Código verificado correctamente", Toast.LENGTH_SHORT).show();
+
+                            // Pasamos a la pantalla de Cambiar Contraseña
+                            Intent intent = new Intent(this, CambiarPassActivity.class);
+                            intent.putExtra("correoUsuario", correoUsuario);
+                            intent.putExtra("flujoRecuperacion", true); // Bandera para saber de dónde venimos
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            Toast.makeText(this, "Código incorrecto", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(this, "No se encontró ningún código vigente para este correo", Toast.LENGTH_SHORT).show();
+                    }
+                }).addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error al verificar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
 }

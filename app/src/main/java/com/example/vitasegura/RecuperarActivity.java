@@ -16,12 +16,17 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.functions.FirebaseFunctions;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class RecuperarActivity extends AppCompatActivity {
 
     private EditText etCorreo;
     private Button btnEnviar;
-    private FirebaseAuth mAuth;
+
+    private FirebaseFunctions mFunctions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,9 +36,11 @@ public class RecuperarActivity extends AppCompatActivity {
 
         etCorreo = findViewById(R.id.et_recuperar_correo);
         btnEnviar = findViewById(R.id.btn_enviar_codigo);
-        mAuth = FirebaseAuth.getInstance();
 
-        btnEnviar.setOnClickListener(v -> enviarEnlaceRecuperacion());
+        // Inicializamos Cloud Functions
+        mFunctions = FirebaseFunctions.getInstance();
+
+        btnEnviar.setOnClickListener(v -> enviarCodigo());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -42,7 +49,7 @@ public class RecuperarActivity extends AppCompatActivity {
         });
     }
 
-    private void enviarEnlaceRecuperacion() {
+    private void enviarCodigo() {
         String correo = etCorreo.getText().toString().trim();
 
         if (correo.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
@@ -50,13 +57,31 @@ public class RecuperarActivity extends AppCompatActivity {
             return;
         }
 
-        mAuth.sendPasswordResetEmail(correo)
+        // Deshabilitar el botón para evitar múltiples clics
+        btnEnviar.setEnabled(false);
+        btnEnviar.setText("Enviando...");
+
+        // Preparamos los datos que le enviaremos a la nube
+        Map<String, Object> data = new HashMap<>();
+        data.put("email", correo);
+
+        // Llamamos a la función "enviarCodigoRecuperacion" que creaste en index.js
+        mFunctions.getHttpsCallable("enviarCodigoRecuperacion")
+                .call(data)
                 .addOnCompleteListener(task -> {
+                    btnEnviar.setEnabled(true);
+                    btnEnviar.setText("Enviar Código");
+
                     if (task.isSuccessful()) {
-                        Toast.makeText(RecuperarActivity.this, "Se ha enviado un enlace de recuperación a tu correo", Toast.LENGTH_LONG).show();
-                        finish(); // Regresa al Login
+                        Toast.makeText(this, "Código enviado con éxito a tu correo", Toast.LENGTH_LONG).show();
+
+                        // Pasamos a la siguiente pantalla y le mandamos el correo para validarlo allá
+                        Intent intent = new Intent(RecuperarActivity.this, IngresarCodigoActivity.class);
+                        intent.putExtra("correoUsuario", correo);
+                        startActivity(intent);
                     } else {
-                        Toast.makeText(RecuperarActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Exception e = task.getException();
+                        Toast.makeText(this, "Error al enviar el código: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
     }

@@ -41,7 +41,7 @@
             android:layout_height="53dp"
             android:background="@drawable/boton_primario"
             app:backgroundTint="@null"
-            android:text="Enviar Código"
+            android:text="Verificar código"
             android:textAllCaps="false"
             android:textColor="@color/blanco"
             android:textSize="18sp" />

@@ -18,12 +18,20 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.functions.FirebaseFunctions;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class CambiarPassActivity extends AppCompatActivity {
 
-    private EditText etPassActual,etNuevaPass, etConfirmarPass;
+    private EditText etPassActual, etNuevaPass, etConfirmarPass;
     private Button btnConfirmar;
     private ImageView ivBack;
+
+    private boolean vieneDeRecuperacion = false;
+    private String correoRecuperacion = "";
+    private FirebaseFunctions mFunctions;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,14 +44,78 @@ public class CambiarPassActivity extends AppCompatActivity {
         btnConfirmar = findViewById(R.id.btn_confirmar_cambio);
         ivBack = findViewById(R.id.iv_back_cambiar);
 
+        mFunctions = FirebaseFunctions.getInstance();
+
+        // Verificamos de dónde viene el usuario
+        if (getIntent() != null) {
+            vieneDeRecuperacion = getIntent().getBooleanExtra("flujoRecuperacion", false);
+            correoRecuperacion = getIntent().getStringExtra("correoUsuario");
+        }
+
+        // Si viene de recuperar contraseña, no le pedimos la actual porque no se la sabe
+        if (vieneDeRecuperacion) {
+            etPassActual.setVisibility(View.GONE);
+        }
+
+
+
         ivBack.setOnClickListener(v -> finish());
-        btnConfirmar.setOnClickListener(v -> reautenticarYCambiarPassword());
+        btnConfirmar.setOnClickListener(v -> {
+            if (vieneDeRecuperacion) {
+                cambiarPassDesdeNube();
+            } else {
+                reautenticarYCambiarPassword();
+            }
+        });
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    private void cambiarPassDesdeNube() {
+        String nuevaPass = etNuevaPass.getText().toString().trim();
+        String confirmarPass = etConfirmarPass.getText().toString().trim();
+
+        if (nuevaPass.isEmpty() || confirmarPass.isEmpty()) {
+            Toast.makeText(this, "Por favor llena ambos campos", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!nuevaPass.equals(confirmarPass)) {
+            Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!esPasswordSegura(nuevaPass)) {
+            Toast.makeText(this, "La contraseña no cumple con los requisitos de seguridad", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        btnConfirmar.setEnabled(false);
+        btnConfirmar.setText("Cambiando...");
+
+        // Preparamos los datos para Node.js
+        Map<String, Object> data = new HashMap<>();
+        data.put("email", correoRecuperacion);
+        data.put("newPassword", nuevaPass);
+
+        mFunctions.getHttpsCallable("cambiarPasswordOlvidada")
+                .call(data)
+                .addOnCompleteListener(task -> {
+                    btnConfirmar.setEnabled(true);
+                    btnConfirmar.setText("Confirmar");
+
+                    if (task.isSuccessful()) {
+                        Toast.makeText(this, "¡Contraseña recuperada con éxito!", Toast.LENGTH_LONG).show();
+                        // Terminamos y el usuario ya puede ir al Login a probar su nueva clave
+                        finish();
+                    } else {
+                        Toast.makeText(this, "Error: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     private void reautenticarYCambiarPassword() {
