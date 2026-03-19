@@ -64,11 +64,25 @@ public class AgregarAdultoMayor extends AppCompatActivity {
         mDatabase.child("Codigos_Temporales").child(codigoIngresado).get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful() && task.getResult().exists()) {
-                        // El valor guardado bajo el código es el UID del abuelo
-                        String uidAbuelo = task.getResult().getValue(String.class);
-                        procederAVincular(uidAbuelo, codigoIngresado);
-                    } else {
-                        Toast.makeText(this, "Código no válido o ya expiró", Toast.LENGTH_LONG).show();
+                        //Extraer datos del código
+                        String uidAbuelo = task.getResult().child("id_adulto_vinculado").getValue(String.class);
+                        Long expiracion = task.getResult().child("expiresAt").getValue(Long.class);
+
+                        if(uidAbuelo != null && expiracion != null){
+                            //Verificar si ya caduco
+                            if(System.currentTimeMillis() > expiracion) {
+                                Toast.makeText(this, "El código ha expirado", Toast.LENGTH_SHORT).show();
+                                //Borrar basura
+                                task.getResult().getRef().removeValue();
+                            }else{
+                                //Si no caduco, procedemos a vincular
+                                procederAVincular(uidAbuelo, codigoIngresado);
+                            }
+                        }else{
+                            Toast.makeText(this, "El formato de código es incorrecto", Toast.LENGTH_SHORT).show();
+                        }
+                    }else{
+                        Toast.makeText(this, "Código no encontrado o ya fue usado", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

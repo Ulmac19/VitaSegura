@@ -23,6 +23,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class MainAdultoActivity extends AppCompatActivity {
 
     private LinearLayout btnSalud, btnMeds, btnEmergencia, btnInfo, btnGenerarCodigo;
@@ -127,7 +130,14 @@ public class MainAdultoActivity extends AppCompatActivity {
         }
         String codigoFinal = codigo.toString();
 
-        mDatabase.child("Codigos_Temporales").child(codigoFinal).setValue(uidAbuelo)
+        // Generar código temporal
+        long tiempoExpiracion = System.currentTimeMillis() + (15*60*1000);
+
+        Map<String, Object> datosCodigo = new HashMap<>();
+        datosCodigo.put("id_adulto_vinculado", uidAbuelo);
+        datosCodigo.put("expiresAt", tiempoExpiracion);
+
+        mDatabase.child("Codigos_Temporales").child(codigoFinal).setValue(datosCodigo)
                 .addOnSuccessListener(aVoid -> {
                     mostrarDialogoCodigo(codigoFinal);
                 })
