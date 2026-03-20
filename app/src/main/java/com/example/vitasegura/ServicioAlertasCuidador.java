@@ -4,9 +4,11 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,7 +31,7 @@ public class ServicioAlertasCuidador extends Service {
     public void onCreate() {
         super.onCreate();
 
-        // 1. Crear el canal para el servicio continuo
+        // 1. Crear el canal para el servicio persistente
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel canal = new NotificationChannel(
                     CANAL_SERVICIO_ID, "Vigilancia Activa", NotificationManager.IMPORTANCE_LOW);
@@ -37,18 +39,22 @@ public class ServicioAlertasCuidador extends Service {
             if (manager != null) manager.createNotificationChannel(canal);
         }
 
-        // 2. Iniciar el Foreground Service para que Android no lo cierre
+        // 2. Iniciar el Foreground Service (Obligatorio para que no muera al apagar pantalla)
         Notification notificacionPersistente = new NotificationCompat.Builder(this, CANAL_SERVICIO_ID)
                 .setContentTitle("Modo Cuidador Activo")
-                .setContentText("Atento a cualquier emergencia...")
-                .setSmallIcon(R.drawable.ubicacion) // Cambia esto por tu ícono
+                .setContentText("Vigilando signos vitales del abuelo...")
+                .setSmallIcon(R.drawable.pulsera)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true) // Impide que el usuario la deslice para borrarla
                 .build();
+
         startForeground(2, notificacionPersistente);
 
-        // 3. Buscar a qué abuelo estamos vinculados y empezar a escuchar
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             uidCuidador = FirebaseAuth.getInstance().getCurrentUser().getUid();
             mDatabase = FirebaseDatabase.getInstance().getReference();
+            // Activamos persistencia para que Firebase no se desconecte al apagar pantalla
+            mDatabase.keepSynced(true);
             buscarVinculoYEscuchar();
         }
     }
@@ -73,7 +79,8 @@ public class ServicioAlertasCuidador extends Service {
                     String mensaje = snapshot.child("mensaje").getValue(String.class);
                     if (mensaje != null) {
                         lanzarAlarmaRoja(mensaje);
-                        snapshot.getRef().removeValue(); // Borramos la alerta para que no suene doble
+                        // Importante: Borramos para que el listener sepa que es un evento nuevo la próxima vez
+                        snapshot.getRef().removeValue();
                     }
                 }
             }
@@ -85,30 +92,48 @@ public class ServicioAlertasCuidador extends Service {
     }
 
     private void lanzarAlarmaRoja(String mensaje) {
+        // --- CÓDIGO PARA DESPERTAR EL CELULAR ---
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        if (pm != null) {
+            PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK |
+                    PowerManager.ACQUIRE_CAUSES_WAKEUP |
+                    PowerManager.ON_AFTER_RELEASE, "VitaSegura:AlertaSOS");
+            wl.acquire(10000); // Mantiene el sistema despierto 10 segundos para asegurar que suene
+        }
+
         String canalAlarmaId = "Canal_Emergencia_Roja";
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Le damos IMPORTANCE_HIGH para que haga ruido y muestre un banner emergente
             NotificationChannel canal = new NotificationChannel(
                     canalAlarmaId, "Emergencias S.O.S", NotificationManager.IMPORTANCE_HIGH);
-            manager.createNotificationChannel(canal);
+
+            // Esto permite que la notificación se vea sobre la pantalla de bloqueo
+            canal.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            canal.enableVibration(true);
+            canal.setVibrationPattern(new long[]{0, 1000, 500, 1000, 500, 1000});
+
+            if (manager != null) manager.createNotificationChannel(canal);
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalAlarmaId)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert) // Ícono de alerta nativo
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
                 .setContentTitle("🚨 ¡EMERGENCIA S.O.S! 🚨")
                 .setContentText(mensaje)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setVibrate(new long[]{0, 1000, 500, 1000, 500, 1000}) // Patrón de vibración fuerte
+                .setCategory(NotificationCompat.CATEGORY_ALARM) // Categoría Alarma para bypass de "No molestar"
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setVibrate(new long[]{0, 1000, 500, 1000, 500, 1000})
                 .setAutoCancel(true);
 
-        manager.notify((int) System.currentTimeMillis(), builder.build());
+        if (manager != null) {
+            manager.notify((int) System.currentTimeMillis(), builder.build());
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
+        return START_STICKY; // Asegura que el servicio se reinicie si el sistema lo mata
     }
 
     @Nullable
