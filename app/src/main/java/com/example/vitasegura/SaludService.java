@@ -42,6 +42,10 @@ public class SaludService extends Service {
     private Runnable medRunnable;
     private String ultimaHoraNotificada = "";
 
+    // --- Control de Spam de Alertas ---
+    private long ultimaAlertaEnviada = 0;
+    private static final long INTERVALO_MINIMO_ALERTA = 15000; // 15 segundos
+
     private final BroadcastReceiver receptorBluetooth = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -91,7 +95,6 @@ public class SaludService extends Service {
 
     // --- Lógica de Notificación de Medicamentos ---
     private void iniciarVigilanciaMedicamentos() {
-        // Escuchar medicamentos en tiempo real desde Firebase
         mDatabase.child("Usuarios").child(uidAdulto).child("Medicamentos")
                 .addValueEventListener(new ValueEventListener() {
                     @Override
@@ -105,7 +108,6 @@ public class SaludService extends Service {
                     @Override public void onCancelled(@NonNull DatabaseError error) {}
                 });
 
-        // Tarea repetitiva cada 60 segundos
         medRunnable = new Runnable() {
             @Override
             public void run() {
@@ -118,8 +120,6 @@ public class SaludService extends Service {
 
     private void revisarHoraMedicamentos() {
         String horaActual = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
-
-        // Evitar múltiples notificaciones en el mismo minuto
         if (horaActual.equals(ultimaHoraNotificada)) return;
 
         for (Medicamento med : listaMeds) {
@@ -136,36 +136,29 @@ public class SaludService extends Service {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(canalMedId, "Recordatorios de Medicación", NotificationManager.IMPORTANCE_HIGH);
-
-            // --- VIBRACIÓN ---
             channel.enableVibration(true);
-            channel.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 500}); // Patrón SOS o triple vibración larga
-
-            // --- PANTALLA ---
+            channel.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 500});
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-
             if (manager != null) manager.createNotificationChannel(channel);
         }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalMedId)
                 .setSmallIcon(R.drawable.medicamentos_logo)
-                .setContentTitle("¡HORA DE MEDICAMENTO!") // Título en mayúsculas para mejor visibilidad
+                .setContentTitle("¡HORA DE MEDICAMENTO!")
                 .setContentText("Toma tu: " + med.getNombre())
-                .setPriority(NotificationCompat.PRIORITY_MAX) // Prioridad máxima para que "flote" arriba (Heads-up)
-                .setCategory(NotificationCompat.CATEGORY_ALARM) // Categoría de alarma para que el sistema le de prioridad
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setVibrate(new long[]{0, 500, 200, 500})
-                .setFullScreenIntent(null, true) // Esto ayuda a que el sistema intente despertar la pantalla
+                .setFullScreenIntent(null, true)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true);
 
         if (manager != null) {
             manager.notify(med.getNombre().hashCode(), builder.build());
-
-            // --- CÓDIGO EXTRA PARA PRENDER LA PANTALLA ---
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             if (pm != null && !pm.isInteractive()) {
                 PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "VitaSegura:DespertarPantalla");
-                wl.acquire(5000); // Mantiene la pantalla encendida por 5 segundos
+                wl.acquire(5000);
             }
         }
     }
@@ -173,11 +166,11 @@ public class SaludService extends Service {
     private void procesarYEnviar(String rawData) {
         String cleanData = rawData.trim();
 
+        // --- 1. PROCESAR SIGNOS VITALES ---
         if (cleanData.contains("BPM:") && cleanData.contains("SpO2:")) {
             try {
                 String bpmStr = cleanData.split("BPM:")[1].trim().split(" ")[0];
                 String oxiStr = cleanData.split("SpO2:")[1].trim().split("%")[0];
-
                 HashMap<String, Object> salud = new HashMap<>();
                 salud.put("bpm", Float.parseFloat(bpmStr));
                 salud.put("oxi", Float.parseFloat(oxiStr));
@@ -186,6 +179,7 @@ public class SaludService extends Service {
             } catch (Exception e) {}
         }
 
+        // --- 2. PROCESAR UBICACIÓN ---
         if (cleanData.contains("LAT:") && cleanData.contains("LON:")) {
             try {
                 String[] partes = cleanData.split(" ");
@@ -204,16 +198,37 @@ public class SaludService extends Service {
             } catch (Exception e) {}
         }
 
+        // --- 3. PROCESAR ALERTAS (CON FILTRO DE SPAM) ---
         if (cleanData.contains("ALERTA:")) {
-            try {
-                String tipoAlerta = cleanData.split("ALERTA:")[1].trim().split(" ")[0];
-                HashMap<String, Object> alerta = new HashMap<>();
-                alerta.put("tipo", tipoAlerta);
-                alerta.put("timestamp", ServerValue.TIMESTAMP);
-                alerta.put("leida", false);
-                mDatabase.child("Usuarios").child(uidAdulto).child("Alertas").setValue(alerta);
-            } catch (Exception e) {
-                e.printStackTrace();
+            long tiempoActual = System.currentTimeMillis();
+
+            // Solo procesamos si han pasado más de 15 segundos desde la última alerta enviada
+            if (tiempoActual - ultimaAlertaEnviada > INTERVALO_MINIMO_ALERTA) {
+                try {
+                    String tipoAlerta = cleanData.split("ALERTA:")[1].trim().split(" ")[0];
+                    HashMap<String, Object> emergencia = new HashMap<>();
+
+                    if (tipoAlerta.equalsIgnoreCase("SOS")) {
+                        emergencia.put("mensaje", "¡Botón de pánico presionado! Entra a la app para ver la ubicación.");
+                    } else if (tipoAlerta.equalsIgnoreCase("CAIDA")) {
+                        emergencia.put("mensaje", "¡Se ha detectado una caída automática!");
+                    } else {
+                        emergencia.put("mensaje", "Alerta: " + tipoAlerta);
+                    }
+
+                    emergencia.put("tipo", tipoAlerta);
+                    emergencia.put("timestamp", ServerValue.TIMESTAMP);
+
+                    mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes")
+                            .push()
+                            .setValue(emergencia);
+
+                    // Actualizamos el marcador de tiempo para bloquear duplicados
+                    ultimaAlertaEnviada = tiempoActual;
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
