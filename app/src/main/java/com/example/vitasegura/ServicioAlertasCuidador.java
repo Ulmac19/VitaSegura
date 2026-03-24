@@ -92,6 +92,16 @@ public class ServicioAlertasCuidador extends Service {
                             if (!prefs.getBoolean(idAlerta, false)) {
                                 lanzarAlarmaRoja(mensaje);
 
+                                // Codigo para guardar en el historial local de alertas
+                                NotificacionesDBHelper db = new NotificacionesDBHelper(getApplicationContext());
+
+                                // Generamos la fecha y hora actuales en formato texto
+                                String fechaActual = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date());
+                                String horaActual = new java.text.SimpleDateFormat("HH:mm a", java.util.Locale.getDefault()).format(new java.util.Date());
+
+                                // Insertamos la alerta como EMERGENCIA (true)
+                                db.insertarNotificacion(mensaje, horaActual, fechaActual, true, tiempoActual);
+
                                 // Guardamos que ya sonó para no repetirla si cerramos y abrimos la app
                                 prefs.edit().putBoolean(idAlerta, true).apply();
                             }
