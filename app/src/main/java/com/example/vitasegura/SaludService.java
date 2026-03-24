@@ -1,5 +1,6 @@
 package com.example.vitasegura;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -54,6 +55,7 @@ public class SaludService extends Service {
         }
     };
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -219,11 +221,13 @@ public class SaludService extends Service {
                     emergencia.put("tipo", tipoAlerta);
                     emergencia.put("timestamp", ServerValue.TIMESTAMP);
 
-                    mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes")
-                            .push()
-                            .setValue(emergencia);
+                    DatabaseReference refEmergencias = mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes");
 
-                    // Actualizamos el marcador de tiempo para bloquear duplicados
+                    // Limpiamos alertas anteriores y subimos la nueva
+                    refEmergencias.setValue(null).addOnCompleteListener(task -> {
+                        refEmergencias.push().setValue(emergencia);
+                    });
+
                     ultimaAlertaEnviada = tiempoActual;
 
                 } catch (Exception e) {

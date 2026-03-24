@@ -77,10 +77,26 @@ public class ServicioAlertasCuidador extends Service {
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 if (snapshot.exists()) {
                     String mensaje = snapshot.child("mensaje").getValue(String.class);
-                    if (mensaje != null) {
-                        lanzarAlarmaRoja(mensaje);
-                        // Importante: Borramos para que el listener sepa que es un evento nuevo la próxima vez
-                        snapshot.getRef().removeValue();
+                    Long timestamp = snapshot.child("timestamp").getValue(Long.class);
+
+                    if (mensaje != null && timestamp != null) {
+                        long tiempoActual = System.currentTimeMillis();
+
+                        //Filtro de Tiempo: Solo alertas de los últimos 10 minutos (600,000 milisegundos)
+                        if (tiempoActual - timestamp <= 600000) {
+
+                            //Filtro de Memoria: Verificamos si esta alerta exacta ya la hicimos sonar
+                            android.content.SharedPreferences prefs = getSharedPreferences("HistorialAlertas", Context.MODE_PRIVATE);
+                            String idAlerta = snapshot.getKey(); // El ID único que genera Firebase
+
+                            if (!prefs.getBoolean(idAlerta, false)) {
+                                lanzarAlarmaRoja(mensaje);
+
+                                // Guardamos que ya sonó para no repetirla si cerramos y abrimos la app
+                                prefs.edit().putBoolean(idAlerta, true).apply();
+                            }
+                        }
+
                     }
                 }
             }

@@ -87,16 +87,19 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
         DatabaseReference refAlertas = FirebaseDatabase.getInstance().getReference()
                 .child("Usuarios").child(miUid).child("EmergenciasPendientes");
 
-        // Creamos el "paquete" de alerta
         Map<String, Object> alerta = new HashMap<>();
         alerta.put("tipo", "SOS_BOTON");
         alerta.put("mensaje", "¡Botón de pánico presionado! Entra a la app para ver la ubicación.");
         alerta.put("timestamp", System.currentTimeMillis());
 
-        // Subimos a Firebase
-        refAlertas.push().setValue(alerta).addOnCompleteListener(task -> {
-            Toast.makeText(this, "¡AYUDA SOLICITADA AL CUIDADOR!", Toast.LENGTH_LONG).show();
-            finish(); // Regresamos al menú
-        });
+        //Borramos las alertas anteriores
+        refAlertas.removeValue();
+
+        //Damos la orden de subir la nueva alerta
+        refAlertas.push().setValue(alerta);
+
+        // 3. Mostramos el mensaje y cerramos INMEDIATAMENTE sin esperar al servidor
+        Toast.makeText(AlertaEmergenciaActivity.this, "¡AYUDA SOLICITADA AL CUIDADOR!", Toast.LENGTH_LONG).show();
+        finish();
     }
 }
