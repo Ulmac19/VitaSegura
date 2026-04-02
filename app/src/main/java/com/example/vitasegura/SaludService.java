@@ -47,6 +47,11 @@ public class SaludService extends Service {
     private long ultimaAlertaEnviada = 0;
     private static final long INTERVALO_MINIMO_ALERTA = 15000; // 15 segundos
 
+    // --- Control de Spam de Signos Vitales ---
+    private long ultimaAlertaBpm = 0;
+    private long ultimaAlertaOxi = 0;
+    private static final long COOLDOWN_VITALES = 600000; // 10 minutos en milisegundos
+
     private final BroadcastReceiver receptorBluetooth = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -173,11 +178,16 @@ public class SaludService extends Service {
             try {
                 String bpmStr = cleanData.split("BPM:")[1].trim().split(" ")[0];
                 String oxiStr = cleanData.split("SpO2:")[1].trim().split("%")[0];
+                float bpm = Float.parseFloat(bpmStr);
+                float oxi = Float.parseFloat(oxiStr);
+
                 HashMap<String, Object> salud = new HashMap<>();
-                salud.put("bpm", Float.parseFloat(bpmStr));
-                salud.put("oxi", Float.parseFloat(oxiStr));
+                salud.put("bpm", bpm);
+                salud.put("oxi", oxi);
                 salud.put("timestamp", ServerValue.TIMESTAMP);
                 mDatabase.child("Usuarios").child(uidAdulto).child("MonitoreoActual").setValue(salud);
+
+                evaluarSignosVitales(bpm, oxi);
             } catch (Exception e) {}
         }
 
@@ -235,6 +245,41 @@ public class SaludService extends Service {
                 }
             }
         }
+    }
+
+    private void evaluarSignosVitales(float bpm, float oxi) {
+        long tiempoActual = System.currentTimeMillis();
+
+        //1.Evaluar Frecuencia Cardiaca (Normal: 60-100 bpm)
+        if(tiempoActual - ultimaAlertaBpm > COOLDOWN_VITALES) {
+            if(bpm > 100){
+                enviarAlertaInfo("Ritmo cardíaco elevado (Taquicardia): " + Math.round(bpm) + " lpm", "INFO_BPM");
+                ultimaAlertaBpm = tiempoActual;
+            } else if (bpm < 60 && bpm > 30) { //30 para evitar avisos falsos si la pulsera es retirada
+                enviarAlertaInfo("Ritmo cardíaco bajo (Bradycardia): " + Math.round(bpm) + " lpm", "INFO_BPM");
+                ultimaAlertaBpm = tiempoActual;
+            }
+        }
+
+        //2.Evaluar Oxigeno (Normal: > 95%)
+        if(tiempoActual - ultimaAlertaOxi > COOLDOWN_VITALES) {
+            if(oxi <= 94 && oxi > 50){ //50 para evitar falsos positivos
+                String gravedad = (oxi <= 90) ? "moderada/grave" : "leve";
+                enviarAlertaInfo("Hipoxemia " + gravedad + ". Oxigeno al " + Math.round(oxi) + "%", "INFO_OXI");
+                ultimaAlertaOxi = tiempoActual;
+            }
+        }
+    }
+
+    private void enviarAlertaInfo(String mensaje, String tipo) {
+        HashMap<String, Object> info = new HashMap<>();
+        info.put("mensaje", mensaje);
+        info.put("tipo", tipo); //Dice si es info o emergencia
+        info.put("timestamp", ServerValue.TIMESTAMP);
+
+        //Nodo de las emergencias pendientes
+        mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes")
+                .push().setValue(info);
     }
 
     @Override

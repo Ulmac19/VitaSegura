@@ -78,6 +78,8 @@ public class ServicioAlertasCuidador extends Service {
                 if (snapshot.exists()) {
                     String mensaje = snapshot.child("mensaje").getValue(String.class);
                     Long timestamp = snapshot.child("timestamp").getValue(Long.class);
+                    String tipo = snapshot.child("tipo").getValue(String.class);
+
 
                     if (mensaje != null && timestamp != null) {
                         long tiempoActual = System.currentTimeMillis();
@@ -90,17 +92,29 @@ public class ServicioAlertasCuidador extends Service {
                             String idAlerta = snapshot.getKey(); // El ID único que genera Firebase
 
                             if (!prefs.getBoolean(idAlerta, false)) {
-                                lanzarAlarmaRoja(mensaje);
 
-                                // Codigo para guardar en el historial local de alertas
+                                //1. Determinar si es emergencia o solo infomacion
+                                boolean esEmergencia = true;
+                                if(tipo != null && tipo.startsWith("INFO_")){
+                                    esEmergencia = false;
+                                }
+
+                                //2. Lanzar Notificacion correcta
+                                if (esEmergencia)
+                                    lanzarAlarmaRoja(mensaje);
+                                else
+                                    lanzarAlertaInformativa(mensaje);
+
+
+                                // 3. Guardar en SQLite
                                 NotificacionesDBHelper db = new NotificacionesDBHelper(getApplicationContext());
 
                                 // Generamos la fecha y hora actuales en formato texto
                                 String fechaActual = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date());
                                 String horaActual = new java.text.SimpleDateFormat("HH:mm a", java.util.Locale.getDefault()).format(new java.util.Date());
 
-                                // Insertamos la alerta como EMERGENCIA (true)
-                                db.insertarNotificacion(mensaje, horaActual, fechaActual, true, tiempoActual);
+                                // Insertar la notificación en la base de datos segun el tipo
+                                db.insertarNotificacion(mensaje, horaActual, fechaActual, esEmergencia, tiempoActual);
 
                                 // Guardamos que ya sonó para no repetirla si cerramos y abrimos la app
                                 prefs.edit().putBoolean(idAlerta, true).apply();
@@ -155,6 +169,28 @@ public class ServicioAlertasCuidador extends Service {
         if (manager != null) {
             manager.notify((int) System.currentTimeMillis(), builder.build());
         }
+    }
+
+    private void lanzarAlertaInformativa(String mensaje){
+        String canalInfoId = "Canal_Informacion_Salud";
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            NotificationChannel canal = new NotificationChannel(
+                    canalInfoId, "Avisos de Salud", NotificationManager.IMPORTANCE_DEFAULT);
+            if (manager != null) manager.createNotificationChannel(canal);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalInfoId)
+                .setSmallIcon(R.drawable.notificacion) // Puedes usar otro icono si gustas
+                .setContentTitle("Aviso de Monitoreo")
+                .setContentText(mensaje)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true);
+        if (manager != null) {
+            manager.notify((int) System.currentTimeMillis(), builder.build());
+        }
+
     }
 
     @Override

@@ -104,7 +104,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
     }
 
     private void filtrarConfiguraciones(String query) {
-        // Si la búsqueda está vacía, mostrar todo
+        // Si la búsqueda está vacía, mostrar todas las secciones
         if (query.isEmpty()) {
             sectionSalud.setVisibility(View.VISIBLE);
             sectionUbicacion.setVisibility(View.VISIBLE);
