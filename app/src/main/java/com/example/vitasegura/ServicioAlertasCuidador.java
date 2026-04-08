@@ -3,6 +3,7 @@ package com.example.vitasegura;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -156,6 +157,13 @@ public class ServicioAlertasCuidador extends Service {
             if (manager != null) manager.createNotificationChannel(canal);
         }
 
+        Intent intentMapa = new Intent(this, UbicacionAdultoActivity.class);
+        intentMapa.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                intentMapa, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalAlarmaId)
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
                 .setContentTitle("🚨 ¡EMERGENCIA S.O.S! 🚨")
@@ -164,7 +172,8 @@ public class ServicioAlertasCuidador extends Service {
                 .setCategory(NotificationCompat.CATEGORY_ALARM) // Categoría Alarma para bypass de "No molestar"
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setVibrate(new long[]{0, 1000, 500, 1000, 500, 1000})
-                .setAutoCancel(true);
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
 
         if (manager != null) {
             manager.notify((int) System.currentTimeMillis(), builder.build());
