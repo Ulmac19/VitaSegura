@@ -57,7 +57,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Hora de toma: "
+            android:text="Hora de toma (Primera): "
             android:textColor="@color/azul_claro"
             android:textSize="16sp" />
         <TextView
@@ -110,5 +110,16 @@
             android:textSize="16sp"
             android:textStyle="bold"/>
     </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_tomar_dolor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="10dp"
+        android:text="Tomar Ahora"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF"
+        android:visibility="gone"/>
 
 </LinearLayout>

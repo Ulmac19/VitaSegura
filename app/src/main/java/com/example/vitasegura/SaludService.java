@@ -28,6 +28,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +42,7 @@ public class SaludService extends Service {
     private List<Medicamento> listaMeds = new ArrayList<>();
     private Handler medHandler = new Handler(Looper.getMainLooper());
     private Runnable medRunnable;
-    private String ultimaHoraNotificada = "";
+    private java.util.HashMap<String, Long> historialAlertasMeds = new java.util.HashMap<>();
 
     // --- Control de Spam de Alertas ---
     private long ultimaAlertaEnviada = 0;
@@ -119,20 +120,73 @@ public class SaludService extends Service {
             @Override
             public void run() {
                 revisarHoraMedicamentos();
-                medHandler.postDelayed(this, 60000);
+                medHandler.postDelayed(this, 10000);
             }
         };
         medHandler.post(medRunnable);
     }
 
     private void revisarHoraMedicamentos() {
-        String horaActual = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
-        if (horaActual.equals(ultimaHoraNotificada)) return;
+        Calendar ahora = Calendar.getInstance();
+        int horaActual = ahora.get(Calendar.HOUR_OF_DAY); // Formato 0-23 horas
+        int minutoActual = ahora.get(Calendar.MINUTE);
+        long tiempoActualMs = System.currentTimeMillis();
+
+        // Convertimos la hora actual a los minutos totales del día (Ej: 01:00 AM = 60 min)
+        int minutosActualesTotales = (horaActual * 60) + minutoActual;
 
         for (Medicamento med : listaMeds) {
-            if (med.getHora() != null && med.getHora().equals(horaActual)) {
-                dispararNotificacionMed(med);
-                ultimaHoraNotificada = horaActual;
+            String freq = med.getFrecuencia();
+
+            // Ignorar los de dolor
+            if (freq == null || freq.equals("Solo si hay dolor")) continue;
+
+            try {
+                int frecuenciaHoras = Integer.parseInt(freq.replaceAll("[^0-9]", ""));
+                if (frecuenciaHoras <= 0) continue; // Protección contra divisiones entre cero
+                int frecuenciaEnMinutos = frecuenciaHoras * 60;
+
+                String[] partesHora = med.getHora().split(":");
+                int horaInicio = Integer.parseInt(partesHora[0].trim());
+                int minutoInicio = Integer.parseInt(partesHora[1].trim());
+
+                int minutosInicioTotales = (horaInicio * 60) + minutoInicio;
+
+                boolean tocaDosis = false;
+
+                // Generamos todas las tomas exactas que le tocan en un ciclo de 24 horas
+                int maxTomasAlDia = (24 * 60) / frecuenciaEnMinutos;
+
+                for (int i = 0; i <= maxTomasAlDia; i++) {
+                    // Calculamos a qué minuto del día cae esta dosis
+                    int minutoDeTomaEsperada = (minutosInicioTotales + (i * frecuenciaEnMinutos)) % 1440; // 1440 min = 24h
+
+                    // Comparamos el reloj de tu celular con la toma esperada
+                    int diferencia = minutosActualesTotales - minutoDeTomaEsperada;
+
+                    // Tolerancia estricta: si es el minuto exacto (0) o el sistema se retrasó un minuto (1)
+                    // El -1439 cubre el caso extremo de que toque a las 23:59 y sean las 00:00
+                    if (diferencia == 0 || diferencia == 1 || diferencia == -1439) {
+                        tocaDosis = true;
+                        break; // Ya encontramos que sí le toca la dosis, dejamos de buscar
+                    }
+                }
+
+                // SI SÍ LE TOCA LA DOSIS, REVISAMOS LA MEMORIA ANTISPAM
+                if (tocaDosis) {
+                    // Buscamos si ya le avisamos de esta pastilla hace un momento
+                    long ultimaVezQueSono = historialAlertasMeds.containsKey(med.getId()) ? historialAlertasMeds.get(med.getId()) : 0;
+
+                    // Bloqueo de 2 minutos: Garantiza que suene exactamente UNA VEZ y no haga spam
+                    if (tiempoActualMs - ultimaVezQueSono > 120000) {
+                        dispararNotificacionMed(med);
+                        // Guardamos en la memoria que ya sonó
+                        historialAlertasMeds.put(med.getId(), tiempoActualMs);
+                    }
+                }
+
+            } catch (Exception e) {
+                // Ignorar si el texto está mal escrito y pasar al siguiente medicamento
             }
         }
     }
