@@ -1,17 +1,24 @@
 package com.example.vitasegura;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -27,6 +34,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MainAdultoActivity extends AppCompatActivity {
+
+    //Variables para verificar conexión
+    private TextView tvSinConexion;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
 
     private LinearLayout btnSalud, btnMeds, btnEmergencia, btnInfo, btnGenerarCodigo;
     private TextView tvNombre;
@@ -66,9 +78,39 @@ public class MainAdultoActivity extends AppCompatActivity {
             }
         });
 
+        //Declarar botón de generar código
         btnGenerarCodigo = findViewById(R.id.btn_generar_codigo);
         btnGenerarCodigo.setOnClickListener(v -> gestionarCodigoVinculacion());
 
+        //Verificar conexión
+        tvSinConexion = findViewById(R.id.tv_sin_conexion);
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        //Verificar el estado inicial al abrir la app
+        verificarConexionInicial();
+
+        //Crear el oyente que reacciona en tiempo real
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(@NonNull Network network) {
+                // Hay internet -> Ocultar banner
+                runOnUiThread(() -> tvSinConexion.setVisibility(View.GONE));
+            }
+
+            @Override
+            public void onLost(@NonNull Network network) {
+                // Se fue el internet -> Mostrar banner
+                runOnUiThread(() -> tvSinConexion.setVisibility(View.VISIBLE));
+            }
+        };
+
+        //Registrar el oyente
+        NetworkRequest request = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+        connectivityManager.registerNetworkCallback(request, networkCallback);
+
+        //Declarar botones de la pantalla
         btnSalud = findViewById(R.id.btn_salud);
         btnMeds = findViewById(R.id.btn_medicamentos);
         btnEmergencia = findViewById(R.id.btn_emergencia);
@@ -119,6 +161,27 @@ public class MainAdultoActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    //Metodo para verificar si hay conexión
+    private void verificarConexionInicial() {
+        if(connectivityManager != null){
+            Network activeNetwork = connectivityManager.getActiveNetwork();
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork); //Verifica si hay internet
+            boolean isConnected = capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+
+            if(!isConnected){
+                tvSinConexion.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
+    protected void onDestroy() {
+        super.onDestroy();
+        //Destruir el oyente para no saturar la memoria
+        if(connectivityManager != null && networkCallback != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
     }
 
     private void gestionarCodigoVinculacion() {

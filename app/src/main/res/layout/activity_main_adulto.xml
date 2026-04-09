@@ -6,6 +6,8 @@
     android:fillViewport="true"
     android:background="#F0F0F0">
 
+
+
     <LinearLayout
         android:id="@+id/main"
         android:layout_width="match_parent"
@@ -14,6 +16,19 @@
         android:orientation="vertical"
         android:paddingTop="20dp"
         android:paddingBottom="20dp">
+
+        <TextView
+            android:id="@+id/tv_sin_conexion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#D32F2F"
+            android:textColor="#FFFFFF"
+            android:text="Modo sin conexión: Mostrando datos guardados"
+            android:textAlignment="center"
+            android:padding="6dp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            android:elevation="4dp" />
 
         <RelativeLayout
             android:layout_width="match_parent"

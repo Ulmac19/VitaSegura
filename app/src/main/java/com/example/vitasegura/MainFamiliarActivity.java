@@ -1,9 +1,14 @@
 package com.example.vitasegura;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -29,6 +34,12 @@ import com.google.firebase.database.ValueEventListener;
 public class MainFamiliarActivity extends AppCompatActivity {
     private LinearLayout btnMonitoreo, btnMedicamentos, btnUbicacion, btn_notificaciones, btn_usuarios,
     btn_configuracion;
+
+    //Variables para verificar conexión
+    private TextView tvSinConexion;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+
     private ImageView btn_agregar_abuelo, btn_cerrar_sesion, ivIconoVinculo;
     private TextView tvNombre, tvTituloConexion, tvSubtituloConexion;
     private View viewIndicadorLed;
@@ -68,8 +79,36 @@ public class MainFamiliarActivity extends AppCompatActivity {
         });
 
 
+        //Verificar conexión
+        tvSinConexion = findViewById(R.id.tv_sin_conexion);
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        // 2. IMPORTANTE: Vincular el ID después de setContentView
+        //Verificar el estado inicial al abrir la app
+        verificarConexionInicial();
+
+        //Crear el oyente que reacciona en tiempo real
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(@NonNull Network network) {
+                // Hay internet -> Ocultar banner
+                runOnUiThread(() -> tvSinConexion.setVisibility(View.GONE));
+            }
+
+            @Override
+            public void onLost(@NonNull Network network) {
+                // Se fue el internet -> Mostrar banner
+                runOnUiThread(() -> tvSinConexion.setVisibility(View.VISIBLE));
+            }
+        };
+
+        //Registrar el oyente
+        NetworkRequest request = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+        connectivityManager.registerNetworkCallback(request, networkCallback);
+
+
+        //Inicializar botones de la pantalla
         btnMonitoreo = findViewById(R.id.btn_monitoreo);
         btn_agregar_abuelo = findViewById(R.id.btn_agregar_abuelo);
         btnMedicamentos = findViewById(R.id.btn_medicamentos);
@@ -80,7 +119,6 @@ public class MainFamiliarActivity extends AppCompatActivity {
         btn_cerrar_sesion = findViewById(R.id.btn_cerrar_sesion);
 
 
-        // 3. Ahora sí, configurar el listener
         if (btnMonitoreo != null) { // Buena práctica para evitar cierres
             btnMonitoreo.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -189,6 +227,27 @@ public class MainFamiliarActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    //Metodo para verificar si hay conexión
+    private void verificarConexionInicial() {
+        if(connectivityManager != null){
+            Network activeNetwork = connectivityManager.getActiveNetwork();
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork); //Verifica si hay internet
+            boolean isConnected = capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+
+            if(!isConnected){
+                tvSinConexion.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
+    protected void onDestroy() {
+        super.onDestroy();
+        //Destruir el oyente para no saturar la memoria
+        if(connectivityManager != null && networkCallback != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
     }
 
     private void actualizarInterfazVinculo(String uidAbuelo) {
