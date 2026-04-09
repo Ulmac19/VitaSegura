@@ -56,8 +56,15 @@ public class SaludService extends Service {
     private final BroadcastReceiver receptorBluetooth = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            String rawData = intent.getStringExtra("valor_raw");
-            if (rawData != null) procesarYEnviar(rawData);
+            String accion = intent.getAction();
+
+            if("DATA_PULSERA_REAL".equals(accion)) {
+                String rawData = intent.getStringExtra("valor_raw");
+                if (rawData != null) procesarYEnviar(rawData);
+            } else if ("PULSERA_DESCONECTADA".equals(accion)) {
+                //Si se desconecta, lanzamos alerta
+                lanzarAlertaDesconexion();
+            }
         }
     };
 
@@ -71,8 +78,11 @@ public class SaludService extends Service {
             iniciarVigilanciaMedicamentos();
         }
 
-        // Registrar el receptor para captar datos del BluetoothServiceManager
-        IntentFilter filter = new IntentFilter("DATA_PULSERA_REAL");
+        // Registrar el receptor para captar datos Y desconexiones
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("DATA_PULSERA_REAL");
+        filter.addAction("PULSERA_DESCONECTADA");
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(receptorBluetooth, filter, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -221,6 +231,31 @@ public class SaludService extends Service {
                 PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "VitaSegura:DespertarPantalla");
                 wl.acquire(5000);
             }
+        }
+    }
+
+    //Metodo de notificacion en caso de desconexion de la pulsera
+    private void lanzarAlertaDesconexion(){
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        String canalId = "canal_desconexion";
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            NotificationChannel channel = new NotificationChannel(canalId, "Alertas de Pulsera", NotificationManager.IMPORTANCE_HIGH);
+            channel.enableVibration(true);
+            if(manager != null) manager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalId)
+                .setSmallIcon(R.drawable.pulsera)
+                .setContentTitle("!Pulsera desconectada!")
+                .setContentText("Tu pulsera VitaSegura ha perdido conexión. Por favor, acércala a tu celular.")
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setVibrate(new long[]{0, 500, 200, 500})
+                .setAutoCancel(true);
+
+        if(manager != null){
+            //ID fijo anti spam para que no se repita la notificacion, sino que se actualice
+            manager.notify(999, builder.build());
         }
     }
 

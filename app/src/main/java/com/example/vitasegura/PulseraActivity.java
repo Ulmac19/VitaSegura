@@ -168,6 +168,11 @@ public class PulseraActivity extends AppCompatActivity {
                 });
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 BluetoothServiceManager.getInstance().setGatt(null);
+
+                //Avisar al servicio de notificación de que se perdió la conexión
+                Intent intentDesc = new Intent("PULSERA_DESCONECTADA");
+                sendBroadcast(intentDesc);
+
                 runOnUiThread(() -> {
                     btnConectar.setText("Conectar");
                     btnConectar.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#23608C")));
