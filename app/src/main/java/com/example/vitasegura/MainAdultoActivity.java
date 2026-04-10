@@ -94,7 +94,10 @@ public class MainAdultoActivity extends AppCompatActivity {
             @Override
             public void onAvailable(@NonNull Network network) {
                 // Hay internet -> Ocultar banner
-                runOnUiThread(() -> tvSinConexion.setVisibility(View.GONE));
+                runOnUiThread(() -> {
+                    tvSinConexion.setVisibility(View.GONE);
+                    sincronizarAlertasPendientes();
+                });
             }
 
             @Override
@@ -182,6 +185,40 @@ public class MainAdultoActivity extends AppCompatActivity {
         if(connectivityManager != null && networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
         }
+    }
+
+    //Metodo para sincronizar alertas guardadas en SQLite
+    private void sincronizarAlertasPendientes(){
+        if(FirebaseAuth.getInstance().getCurrentUser() == null) return;
+        String miUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference()
+                .child("Usuarios").child(miUid).child("EmergenciasPendientes");
+
+        AlertasOfflineDBHelper dbHelper = new AlertasOfflineDBHelper(this);
+        android.database.sqlite.SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        //Leer todas las alertas pendientes
+        android.database.Cursor c = db.rawQuery("SELECT * FROM " + AlertasOfflineDBHelper.TABLE_NAME, null);
+
+        while(c.moveToNext()){
+            int id = c.getInt(0);
+            String tipo = c.getString(1);
+            String mensaje = c.getString(2);
+            long timestamp = c.getLong(3);
+
+            Map<String, Object> alerta = new HashMap<>();
+            alerta.put("tipo", tipo);
+            alerta.put("mensaje", mensaje);
+            alerta.put("timestamp", timestamp);
+
+            //Subir a firebase
+            ref.push().setValue(alerta).addOnSuccessListener(aVoid -> {
+                //EXITO: Si se sube, eliminar de SQLite
+                dbHelper.eliminarAlertas(id);
+            });
+        }
+        c.close();
+        db.close();
     }
 
     private void gestionarCodigoVinculacion() {
