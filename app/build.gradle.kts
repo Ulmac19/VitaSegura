@@ -66,6 +66,12 @@ dependencies {
     //Mensajeria
     implementation("com.google.firebase:firebase-messaging")
 
+    // Librería para cargar imágenes
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    // Dependencia para subir archivos/fotos a Firebase
+    implementation("com.google.firebase:firebase-storage")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

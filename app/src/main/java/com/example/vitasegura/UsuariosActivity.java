@@ -1,6 +1,7 @@
 package com.example.vitasegura;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -10,6 +11,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,12 +20,15 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +37,12 @@ public class UsuariosActivity extends AppCompatActivity {
 
     private TextView tvTitulo, tvNombre, tvCorreo, tvTelefono;
     private Button btnCambiarPass, btnEliminar, btnAnterior, btnSiguiente;
-    private ImageView ivAgregar;
+    private ImageView ivAgregar, ivPerfil;
+
+    //Variables para foto de perfil
+    private Uri imagenUri;
+    private ActivityResultLauncher<String> galeriaLauncher;
+
 
     private List<Usuario> listaUsuarios = new ArrayList<>();
     private int indiceActual = 0;
@@ -56,6 +67,7 @@ public class UsuariosActivity extends AppCompatActivity {
         btnAnterior = findViewById(R.id.btn_anterior);
         btnSiguiente = findViewById(R.id.btn_siguiente);
         ivAgregar = findViewById(R.id.iv_agregar_usuario);
+        ivPerfil = findViewById(R.id.iv_perfil_usuario_item);
 
         mAuth = FirebaseAuth.getInstance();
         mDatabase = FirebaseDatabase.getInstance().getReference();
@@ -64,6 +76,28 @@ public class UsuariosActivity extends AppCompatActivity {
             miUid = mAuth.getCurrentUser().getUid();
             obtenerIdAbueloYCuidadores();
         }
+
+        galeriaLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri ->{
+                    if(uri != null){
+                        imagenUri = uri;
+                        Glide.with(this).load(imagenUri).circleCrop().into(ivPerfil);
+                        subirFotoAFirebase();
+                    }
+                }
+        );
+
+        ivPerfil.setOnClickListener(v -> {
+            if (!listaUsuarios.isEmpty()) {
+                boolean esMiPerfil = listaUsuarios.get(indiceActual).getUid().equals(miUid); //Variable para saber si es mi perfil
+                if (esMiPerfil) {
+                    galeriaLauncher.launch("image/*");
+                } else {
+                    Toast.makeText(this, "Solo puedes cambiar tu propia foto", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
         // Navegación carrusel
         btnSiguiente.setOnClickListener(v -> {
@@ -154,9 +188,10 @@ public class UsuariosActivity extends AppCompatActivity {
                                     String nombre = userSnap.child("nombre").getValue(String.class);
                                     String correo = userSnap.child("correo").getValue(String.class);
                                     String telefono = userSnap.child("telefono").getValue(String.class);
+                                    String fotoPerfil = userSnap.child("fotoPerfil").getValue(String.class);
                                     Boolean esPrincipal = userSnap.child("esPrincipal").getValue(Boolean.class);
 
-                                    Usuario u = new Usuario(uid, nombre, correo, telefono, esPrincipal != null ? esPrincipal : true);
+                                    Usuario u = new Usuario(uid, nombre, correo, telefono,  esPrincipal != null ? esPrincipal : true, fotoPerfil != null ? fotoPerfil : "");
 
                                     // Me aseguro de que "Mi Información" siempre quede en la posición 0
                                     if (uid.equals(miUid)) {
@@ -170,6 +205,36 @@ public class UsuariosActivity extends AppCompatActivity {
                         }
                     }
                     @Override public void onCancelled(@NonNull DatabaseError error) {}
+                });
+    }
+
+    //Metodo para subir la foto a Firebase Storage
+    private void subirFotoAFirebase() {
+        if (mAuth.getCurrentUser() == null || imagenUri == null) return;
+        String uid = mAuth.getCurrentUser().getUid();
+
+        Toast.makeText(this, "Subiendo foto, por favor espera...", Toast.LENGTH_LONG).show();
+
+        StorageReference storageRef = FirebaseStorage.getInstance()
+                .getReference().child("FotosPerfil").child(uid + ".jpg");
+
+        storageRef.putFile(imagenUri)
+                .addOnSuccessListener(taskSnapshot -> {
+                    taskSnapshot.getStorage().getDownloadUrl().addOnSuccessListener(uri -> {
+                        String urlDescarga = uri.toString();
+
+                        mDatabase.child("Usuarios").child(uid).child("fotoPerfil").setValue(urlDescarga)
+                                .addOnSuccessListener(aVoid -> {
+                                    Toast.makeText(UsuariosActivity.this, "¡Foto actualizada con éxito!", Toast.LENGTH_SHORT).show();
+                                    // Actualizar la foto en la lista, si es mi perfil
+                                    listaUsuarios.get(indiceActual).setFotoPerfil(urlDescarga);
+                                });
+                    }).addOnFailureListener(e -> {
+                        Toast.makeText(UsuariosActivity.this, "Error al obtener URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(UsuariosActivity.this, "Error al subir: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
     }
 
@@ -232,6 +297,16 @@ public class UsuariosActivity extends AppCompatActivity {
         tvNombre.setText(user.getNombre() != null ? user.getNombre() : "Sin nombre");
         tvCorreo.setText(user.getCorreo() != null ? user.getCorreo() : "Sin correo");
         tvTelefono.setText(user.getTelefono() != null ? user.getTelefono() : "Sin teléfono");
+        String urlFoto = user.getFotoPerfil();
+        if (urlFoto != null && !urlFoto.isEmpty()) {
+            Glide.with(this)
+                    .load(urlFoto)
+                    .circleCrop()
+                    .placeholder(R.drawable.usuario)
+                    .into(ivPerfil);
+        } else {
+            ivPerfil.setImageResource(R.drawable.usuario);
+        }
 
         //Comparamos si este usuario soy yo
         boolean esMiPerfil = user.getUid().equals(miUid);

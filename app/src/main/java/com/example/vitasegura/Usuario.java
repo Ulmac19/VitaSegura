@@ -6,18 +6,20 @@ public class Usuario {
     private String correo;
     private String telefono;
     private boolean esPrincipal;
+    private String fotoPerfil;
 
     // CONSTRUCTOR VACÍO
     public Usuario() {
     }
 
     // 2. Constructor con todos los parámetros
-    public Usuario(String uid, String nombre, String correo, String telefono, boolean esPrincipal) {
+    public Usuario(String uid, String nombre, String correo, String telefono, boolean esPrincipal, String fotoPerfil) {
         this.uid = uid;
         this.nombre = nombre;
         this.correo = correo;
         this.telefono = telefono;
         this.esPrincipal = esPrincipal;
+        this.fotoPerfil = fotoPerfil;
     }
 
     // Getters y Setters
@@ -35,4 +37,7 @@ public class Usuario {
 
     public boolean isEsPrincipal() { return esPrincipal; }
     public void setEsPrincipal(boolean esPrincipal) { this.esPrincipal = esPrincipal; }
+
+    public String getFotoPerfil() { return fotoPerfil; }
+    public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
 }
