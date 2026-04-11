@@ -3,6 +3,7 @@ package com.example.vitasegura;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -98,6 +99,20 @@ public class UsuariosActivity extends AppCompatActivity {
                 }
             }
         });
+
+        View.OnClickListener listenerEditarInfo = v -> {
+            if(!listaUsuarios.isEmpty()){
+                boolean esMiPerfil = listaUsuarios.get(indiceActual).getUid().equals(miUid);
+                if(esMiPerfil){
+                    mostrarDialogEditarPerfil();
+                } else{
+                    Toast. makeText(this, "Solo puedes editar tu propia información", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
+
+        tvNombre.setOnClickListener(listenerEditarInfo);
+        tvTelefono.setOnClickListener(listenerEditarInfo);
 
         // Navegación carrusel
         btnSiguiente.setOnClickListener(v -> {
@@ -261,6 +276,55 @@ public class UsuariosActivity extends AppCompatActivity {
         builder.show();
     }
 
+    //Metodo para lanzar dialog para editar perfil
+    private void mostrarDialogEditarPerfil() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Editar Mis Datos");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(60, 40, 60, 10);
+
+        //Campo para el nombre
+        final EditText etnuevoNombre = new EditText(this);
+        etnuevoNombre.setHint("Nombre Completo");
+        etnuevoNombre.setText(listaUsuarios.get(indiceActual).getNombre());
+        layout.addView(etnuevoNombre);
+
+        //Campo para el telefono
+        final EditText etNuevoTelefono = new EditText(this);
+        etNuevoTelefono.setHint("Número de teléfono");
+        etNuevoTelefono.setInputType(InputType.TYPE_CLASS_PHONE);
+        etNuevoTelefono.setText(listaUsuarios.get(indiceActual).getTelefono());
+        layout.addView(etNuevoTelefono);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("Guardar", (dialog, which) -> {
+            String nuevoNombre = etnuevoNombre.getText().toString().trim();
+            String nuevoTelefono = etNuevoTelefono.getText().toString().trim();
+
+            if(nuevoNombre.isEmpty() || nuevoTelefono.isEmpty()){
+                Toast.makeText(this, "Los campos no pueden estar vacíos", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            //Actualizar en Firebase
+            mDatabase.child("Usuarios").child(miUid).child("nombre").setValue(nuevoNombre);
+            mDatabase.child("Usuarios").child(miUid).child("telefono").setValue(nuevoTelefono)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(this, "¡Datos actualizados con éxito!",Toast.LENGTH_SHORT).show();
+
+                        //Actualizar la lista local y refrescar la pantalla
+                        listaUsuarios.get(indiceActual).setNombre(nuevoNombre);
+                        listaUsuarios.get(indiceActual).setTelefono(nuevoTelefono);
+                        actualizarPantalla();
+                    });
+        });
+        builder.setNegativeButton("Cancelar", null);
+        builder.show();
+    }
+
     private void buscarYVincularCuidadorPorCorreo(String correo) {
         mDatabase.child("Usuarios").orderByChild("correo").equalTo(correo).get()
                 .addOnSuccessListener(snapshot -> {
@@ -316,11 +380,16 @@ public class UsuariosActivity extends AppCompatActivity {
             btnCambiarPass.setVisibility(View.VISIBLE);
             btnEliminar.setVisibility(View.GONE);
             ivAgregar.setVisibility(listaUsuarios.size() < 3 ? View.VISIBLE : View.GONE);
+            tvNombre.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.ic_menu_edit,0);
+            tvTelefono.setCompoundDrawablesWithIntrinsicBounds(0,0,R.drawable.ic_menu_edit,0);
         } else {
             tvTitulo.setText("Cuidador de Apoyo");
             btnCambiarPass.setVisibility(View.GONE);
             btnEliminar.setVisibility(View.VISIBLE);
             ivAgregar.setVisibility(View.GONE);
+
+            tvNombre.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            tvTelefono.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
         }
 
         btnAnterior.setEnabled(indiceActual > 0);

@@ -64,6 +64,7 @@
                 android:id="@+id/tv_nombre"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:paddingEnd="10dp"
                 android:background="#FFFFFF"
                 android:gravity="center_vertical"
                 android:paddingStart="16dp"
@@ -100,12 +101,15 @@
                 android:id="@+id/tv_telefono"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:paddingEnd="10dp"
                 android:background="#FFFFFF"
                 android:gravity="center_vertical"
                 android:paddingStart="16dp"
                 android:textColor="@color/azul_oscuro"
                 android:textSize="18sp" />
         </androidx.cardview.widget.CardView>
+
+
 
         <Button
             android:id="@+id/btn_cambiar_pass"
