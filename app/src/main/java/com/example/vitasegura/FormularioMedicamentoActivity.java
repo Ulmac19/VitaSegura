@@ -117,27 +117,41 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
             return;
         }
 
-        // Si es nuevo, generamos un ID. Si es edición, usamos el existente.
-        String medId = (medicamentoIdEditar != null) ? medicamentoIdEditar : mDatabase.push().getKey();
+        //Configurar los textos del dialogo dependiendo de si es edicion o nuevo medicamento
+        String tituloDialogo = (medicamentoIdEditar != null) ? "Confirmar Cambios" : "Nuevo Medicamento";
+        String mensajeDialogo = (medicamentoIdEditar != null) ?
+                "¿Estás seguro de que deseas actualizar la información de " + nombre + "?" :
+                "¿Estás seguro de que deseas guardar " + nombre + " para el abuelo?";
 
-        Medicamento nuevoMedicamento = new Medicamento(medId, nombre, frecuencia, hora, dosis, notas);
+        new AlertDialog.Builder(this)
+                .setTitle(tituloDialogo)
+                .setMessage(mensajeDialogo)
+                .setPositiveButton("Guardar", (dialog, which) -> {
 
-        // Guardar en Firebase
-        mDatabase.child("Usuarios").child(uidAbuelo).child("Medicamentos").child(medId).setValue(nuevoMedicamento)
-                .addOnSuccessListener(aVoid -> {
+                    // Si es nuevo, generamos un ID. Si es edición, usamos el existente.
+                    String medId = (medicamentoIdEditar != null) ? medicamentoIdEditar : mDatabase.push().getKey();
 
-                    if (medicamentoIdEditar == null) {
-                        Map<String, Object> notif = new HashMap<>();
-                        notif.put("titulo", "Nuevo Medicamento Asignado");
-                        notif.put("mensaje", "Debes tomar " + nombre + " (" + dosis + ")");
-                        notif.put("timestamp", System.currentTimeMillis());
+                    Medicamento nuevoMedicamento = new Medicamento(medId, nombre, frecuencia, hora, dosis, notas);
 
-                        mDatabase.child("Usuarios").child(uidAbuelo).child("NotificacionesPendientes").push().setValue(notif);
-                    }
+                    // Guardar en Firebase
+                    mDatabase.child("Usuarios").child(uidAbuelo).child("Medicamentos").child(medId).setValue(nuevoMedicamento)
+                            .addOnSuccessListener(aVoid -> {
 
-                    Toast.makeText(this, "Medicamento guardado", Toast.LENGTH_SHORT).show();
-                    finish();
-                });
+                                if (medicamentoIdEditar == null) {
+                                    Map<String, Object> notif = new HashMap<>();
+                                    notif.put("titulo", "Nuevo Medicamento Asignado");
+                                    notif.put("mensaje", "Debes tomar " + nombre + " (" + dosis + ")");
+                                    notif.put("timestamp", System.currentTimeMillis());
+
+                                    mDatabase.child("Usuarios").child(uidAbuelo).child("NotificacionesPendientes").push().setValue(notif);
+                                }
+
+                                Toast.makeText(this, "Medicamento guardado", Toast.LENGTH_SHORT).show();
+                                finish();
+                            });
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 
 }
