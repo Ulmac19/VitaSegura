@@ -3,6 +3,7 @@ package com.example.vitasegura;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -67,7 +68,10 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
         setContentView(R.layout.activity_ubicacion_adulto);
 
         tvTitulo = findViewById(R.id.tv_titulo_ubicacion);
-        findViewById(R.id.iv_back_ubicacion).setOnClickListener(v -> finish());
+        findViewById(R.id.iv_back_ubicacion).setOnClickListener(v -> {
+            Intent intent = new Intent(this, MainFamiliarActivity.class);
+            startActivity(intent);
+        });
         rvHistorial = findViewById(R.id.rv_historial_ubicacion);
 
         dbHelper = new UbicacionDBHelper(this);

@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.graphics.Insets;
@@ -138,12 +139,19 @@ public class MainFamiliarActivity extends AppCompatActivity {
         });
 
        btn_cerrar_sesion.setOnClickListener(view -> {
-           FirebaseAuth.getInstance().signOut(); // Borra el token del celular
-           Intent intent = new Intent(this, LoginActivity.class);
-           // Borramos el historial de pantallas para que no pueda volver atrás
-           intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-           startActivity(intent);
-           finish();
+           new AlertDialog.Builder(this)
+                   .setTitle("Cerrar Sesión")
+                   .setMessage("¿Estás seguro de que deseas salir de tu cuenta?")
+                   .setPositiveButton("Sí, salir", (dialog, which) -> {
+                       FirebaseAuth.getInstance().signOut(); // Borra el token del celular
+                       Intent intent = new Intent(this, LoginActivity.class);
+                       // Borramos el historial de pantallas para que no pueda volver atrás
+                       intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                       startActivity(intent);
+                       finish();
+                   })
+                   .setNegativeButton("Cancelar", null)
+                   .show();
        });
 
         btnMedicamentos.setOnClickListener(new View.OnClickListener() {
