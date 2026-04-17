@@ -3,6 +3,7 @@ package com.example.vitasegura;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Build;
@@ -85,11 +86,17 @@ public class ServicioNotificacionesAbuelo extends Service {
             manager.createNotificationChannel(canal);
         }
 
+        Intent intentMenu = new Intent(this, MedicamentosAbueloActivity.class);
+        intentMenu.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                intentMenu, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalAlarma)
                 .setSmallIcon(R.drawable.medicamentos_logo)
                 .setContentTitle(titulo)
                 .setContentText(mensaje)
                 .setPriority(NotificationCompat.PRIORITY_HIGH) // Importancia ALTA para que suene
+                .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
 
         manager.notify((int) System.currentTimeMillis(), builder.build());

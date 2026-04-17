@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -213,6 +214,11 @@ public class SaludService extends Service {
             if (manager != null) manager.createNotificationChannel(channel);
         }
 
+        Intent intentMeds = new Intent(this, MedicamentosAbueloActivity.class);
+        intentMeds.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntentMeds = PendingIntent.getActivity(this, 0,
+                intentMeds, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalMedId)
                 .setSmallIcon(R.drawable.medicamentos_logo)
                 .setContentTitle("¡HORA DE MEDICAMENTO!")
@@ -220,6 +226,7 @@ public class SaludService extends Service {
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setVibrate(new long[]{0, 500, 200, 500})
+                .setContentIntent(pendingIntentMeds)
                 .setFullScreenIntent(null, true)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true);
@@ -245,12 +252,18 @@ public class SaludService extends Service {
             if(manager != null) manager.createNotificationChannel(channel);
         }
 
+        Intent intentPulsera = new Intent(this, PulseraActivity.class);
+        intentPulsera.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntentPulsera = PendingIntent.getActivity(this, 0,
+                intentPulsera, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalId)
                 .setSmallIcon(R.drawable.pulsera)
                 .setContentTitle("!Pulsera desconectada!")
                 .setContentText("Tu pulsera VitaSegura ha perdido conexión. Por favor, acércala a tu celular.")
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setVibrate(new long[]{0, 500, 200, 500})
+                .setContentIntent(pendingIntentPulsera)
                 .setAutoCancel(true);
 
         if(manager != null){

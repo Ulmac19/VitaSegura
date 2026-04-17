@@ -104,7 +104,7 @@ public class ServicioAlertasCuidador extends Service {
                                 if (esEmergencia)
                                     lanzarAlarmaRoja(mensaje);
                                 else
-                                    lanzarAlertaInformativa(mensaje);
+                                    lanzarAlertaInformativa(mensaje, tipo);
 
 
                                 // 3. Guardar en SQLite
@@ -180,23 +180,41 @@ public class ServicioAlertasCuidador extends Service {
         }
     }
 
-    private void lanzarAlertaInformativa(String mensaje){
+    private void lanzarAlertaInformativa(String mensaje, String tipo){
         String canalInfoId = "Canal_Informacion_Salud";
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
             NotificationChannel canal = new NotificationChannel(
-                    canalInfoId, "Avisos de Salud", NotificationManager.IMPORTANCE_DEFAULT);
+                    canalInfoId, "Avisos de Salud", NotificationManager.IMPORTANCE_HIGH);
             if (manager != null) manager.createNotificationChannel(canal);
         }
+
+        Intent intent;
+        if(tipo != null){
+            if(tipo.equals("INFO_BPM") || tipo.equals("INFO_OXI")){
+                intent = new Intent(this, InformacionAbueloActivity.class);
+            } else if (tipo.equals("INFO_MED")) {
+                intent = new Intent(this, MedicamentosCuidadorActivity.class);
+            } else{
+                intent = new Intent(this, NotificacionesActivity.class);
+            }
+        } else {
+            intent = new Intent(this, MainFamiliarActivity.class);
+        }
+
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0,
+                intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalInfoId)
                 .setSmallIcon(R.drawable.notificacion) // Puedes usar otro icono si gustas
                 .setContentTitle("Aviso de Monitoreo")
                 .setContentText(mensaje)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true);
-        if (manager != null) {
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
+        if (manager != null){
             manager.notify((int) System.currentTimeMillis(), builder.build());
         }
 
