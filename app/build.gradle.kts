@@ -69,6 +69,9 @@ dependencies {
     // Librería para cargar imágenes
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
+    //Libreria para recortar imagenes
+    implementation("com.github.yalantis:ucrop:2.2.8")
+
     // Dependencia para subir archivos/fotos a Firebase
     implementation("com.google.firebase:firebase-storage")
 

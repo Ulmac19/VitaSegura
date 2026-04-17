@@ -31,6 +31,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +45,7 @@ public class UsuariosActivity extends AppCompatActivity {
     private Uri imagenUri;
     private ActivityResultLauncher<String> galeriaLauncher;
 
+    private ActivityResultLauncher<Intent> cropLauncher;
 
     private List<Usuario> listaUsuarios = new ArrayList<>();
     private int indiceActual = 0;
@@ -80,11 +82,25 @@ public class UsuariosActivity extends AppCompatActivity {
 
         galeriaLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
-                uri ->{
-                    if(uri != null){
-                        imagenUri = uri;
-                        Glide.with(this).load(imagenUri).circleCrop().into(ivPerfil);
-                        subirFotoAFirebase();
+                uri -> {
+                    if (uri != null) {
+                        iniciarRecorte(uri); // En lugar de subirla directo, la mandamos a recortar
+                    }
+                }
+        );
+
+        cropLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri resultUri = com.yalantis.ucrop.UCrop.getOutput(result.getData());
+                        if (resultUri != null) {
+                            imagenUri = resultUri;
+                            Glide.with(this).load(imagenUri).circleCrop().into(ivPerfil);
+                            subirFotoAFirebase(); // Sube a la nube
+                        }
+                    } else if (result.getResultCode() == com.yalantis.ucrop.UCrop.RESULT_ERROR) {
+                        Toast.makeText(this, "Error al recortar la imagen", Toast.LENGTH_SHORT).show();
                     }
                 }
         );
@@ -221,6 +237,32 @@ public class UsuariosActivity extends AppCompatActivity {
                     }
                     @Override public void onCancelled(@NonNull DatabaseError error) {}
                 });
+    }
+
+    //Metodo para recortar la foto
+    private void iniciarRecorte(Uri sourceUri) {
+        // Creamos un archivo temporal para guardar el recorte
+        String destinationFileName = "Recorte_" + System.currentTimeMillis() + ".jpg";
+        Uri destinationUri = Uri.fromFile(new File(getCacheDir(), destinationFileName));
+
+        com.yalantis.ucrop.UCrop.Options options = new com.yalantis.ucrop.UCrop.Options();
+        options.setCircleDimmedLayer(true); // Hace que el marco de recorte sea un círculo
+        options.setShowCropGrid(false); // Oculta la cuadrícula para que se vea más limpio
+
+        // Colores personalizados (usa los colores que tienes en tu XML)
+        options.setToolbarColor(androidx.core.content.ContextCompat.getColor(this, R.color.azul_oscuro));
+        options.setStatusBarColor(androidx.core.content.ContextCompat.getColor(this, R.color.azul_oscuro));
+        options.setToolbarWidgetColor(androidx.core.content.ContextCompat.getColor(this, R.color.blanco));
+        options.setToolbarTitle("Encuadrar Foto");
+
+        // Configuramos y lanzamos uCrop
+        Intent intent = com.yalantis.ucrop.UCrop.of(sourceUri, destinationUri)
+                .withAspectRatio(1, 1) // Obliga a que el recorte sea un cuadrado perfecto
+                .withMaxResultSize(800, 800) // Buena resolución sin hacer pesado el archivo para Firebase
+                .withOptions(options)
+                .getIntent(this);
+
+        cropLauncher.launch(intent);
     }
 
     //Metodo para subir la foto a Firebase Storage
