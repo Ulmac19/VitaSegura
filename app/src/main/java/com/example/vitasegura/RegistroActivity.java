@@ -63,8 +63,8 @@ public class RegistroActivity extends AppCompatActivity {
             Toast.makeText(this, "Por favor, completa todos los campos y selecciona un rol", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (pass.length() < 6) {
-            Toast.makeText(this, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show();
+        if (!esPasswordSegura(pass)) {
+            Toast.makeText(this, "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial", Toast.LENGTH_LONG).show();
             return;
         }
         if (!pass.equals(confirmPass)) {
@@ -98,5 +98,16 @@ public class RegistroActivity extends AppCompatActivity {
                         Toast.makeText(RegistroActivity.this, "Error: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    private boolean esPasswordSegura(String password) {
+        // Expresión regular que valida:
+        // (?=.*[0-9])       - Al menos un número
+        // (?=.*[a-z])       - Al menos una minúscula
+        // (?=.*[A-Z])       - Al menos una mayúscula
+        // (?=.*[@#$%^&+=!_\-]) - Al menos un carácter especial
+        // .{8,}             - Mínimo 8 caracteres de longitud
+        String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_\\-]).{8,}$";
+        return password.matches(regex);
     }
 }
