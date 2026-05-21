@@ -110,8 +110,9 @@ public class CambiarPassActivity extends AppCompatActivity {
 
                     if (task.isSuccessful()) {
                         Toast.makeText(this, "¡Contraseña recuperada con éxito!", Toast.LENGTH_LONG).show();
-                        // Terminamos y el usuario ya puede ir al Login a probar su nueva clave
-                        finish();
+                        Intent intent = new Intent(this, LoginActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
                     } else {
                         Toast.makeText(this, "Error: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                     }
@@ -151,7 +152,11 @@ public class CambiarPassActivity extends AppCompatActivity {
                     user.updatePassword(nuevaPass).addOnCompleteListener(updateTask -> {
                         if (updateTask.isSuccessful()) {
                             Toast.makeText(CambiarPassActivity.this, "Contraseña actualizada con éxito", Toast.LENGTH_SHORT).show();
-                            finish(); // Regresa a la pantalla anterior
+                            FirebaseAuth.getInstance().signOut();
+                            Intent intent = new Intent(CambiarPassActivity.this, LoginActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
                         } else {
                             Toast.makeText(CambiarPassActivity.this, "Error al actualizar: " + updateTask.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
