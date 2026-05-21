@@ -6,6 +6,8 @@ import android.bluetooth.*;
 import android.bluetooth.le.*;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
@@ -14,6 +16,8 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import java.util.ArrayList;
@@ -36,6 +40,8 @@ public class PulseraActivity extends AppCompatActivity {
     // --- CONFIGURACIÓN DE TUS MAC ---
     private final String MAC_PULSERA_1 = "1C:DB:D4:C6:4F:5A";
     private final String MAC_PULSERA_2 = "88:56:A6:5C:2E:E6";
+
+    private static final int PERM_BLE = 101;
 
     // Listas para manejar los múltiples hallazgos
     private List<BluetoothDevice> dispositivosEncontrados = new ArrayList<>();
@@ -68,13 +74,59 @@ public class PulseraActivity extends AppCompatActivity {
             }
         }
 
-        btnBuscar.setOnClickListener(v -> iniciarEscaneo());
+        btnBuscar.setOnClickListener(v -> verificarYSolicitarPermisosBLE());
         btnConectar.setOnClickListener(v -> conectarDispositivo());
         findViewById(R.id.iv_back_pulsera).setOnClickListener(v -> finish());
     }
 
+    private void verificarYSolicitarPermisosBLE() {
+        List<String> permisosNecesarios = new ArrayList<>();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
+                permisosNecesarios.add(Manifest.permission.BLUETOOTH_SCAN);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+                permisosNecesarios.add(Manifest.permission.BLUETOOTH_CONNECT);
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            permisosNecesarios.add(Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (permisosNecesarios.isEmpty()) {
+            iniciarEscaneo();
+        } else {
+            ActivityCompat.requestPermissions(this, permisosNecesarios.toArray(new String[0]), PERM_BLE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERM_BLE) {
+            boolean todosOtorgados = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    todosOtorgados = false;
+                    break;
+                }
+            }
+            if (todosOtorgados) {
+                iniciarEscaneo();
+            } else {
+                Toast.makeText(this, "Se necesitan permisos de Bluetooth y ubicación para buscar la pulsera", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     private void iniciarEscaneo() {
-        if (bleScanner == null) return;
+        // Reintentar inicializar el scanner si se acaban de conceder permisos
+        if (bleScanner == null && bluetoothAdapter != null && bluetoothAdapter.isEnabled()) {
+            bleScanner = bluetoothAdapter.getBluetoothLeScanner();
+        }
+        if (bleScanner == null) {
+            Toast.makeText(this, "Bluetooth no disponible o desactivado", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         dispositivosEncontrados.clear();
         nombresParaMostrar.clear();
