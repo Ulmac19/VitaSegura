@@ -325,7 +325,7 @@ public class SaludService extends Service {
                     if (tipoAlerta.equalsIgnoreCase("SOS")) {
                         emergencia.put("mensaje", "¡Botón de pánico presionado! Entra a la app para ver la ubicación.");
                     } else if (tipoAlerta.equalsIgnoreCase("CAIDA")) {
-                        emergencia.put("mensaje", "¡Se ha detectado una caída automática!");
+                        emergencia.put("mensaje", "¡Se ha detectado una caída!");
                     } else {
                         emergencia.put("mensaje", "Alerta: " + tipoAlerta);
                     }

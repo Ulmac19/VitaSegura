@@ -21,12 +21,16 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class ServicioAlertasCuidador extends Service {
 
     private static final String CANAL_SERVICIO_ID = "Canal_Vigilancia_Cuidador";
     private DatabaseReference mDatabase;
     private String uidCuidador;
+    private String idAbueloEscuchando = null;
+    private DatabaseReference refEmergenciasActual = null;
+    private ChildEventListener listenerEmergencias = null;
 
     @Override
     public void onCreate() {
@@ -61,19 +65,36 @@ public class ServicioAlertasCuidador extends Service {
     }
 
     private void buscarVinculoYEscuchar() {
-        mDatabase.child("Vinculos").child(uidCuidador).child("id_adulto_vinculado").get()
-                .addOnSuccessListener(snapshot -> {
-                    if (snapshot.exists()) {
-                        String idAbuelo = snapshot.getValue(String.class);
-                        escucharEmergencias(idAbuelo);
+        mDatabase.child("Vinculos").child(uidCuidador).child("id_adulto_vinculado")
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            String nuevoId = snapshot.getValue(String.class);
+                            if (nuevoId != null && !nuevoId.equals(idAbueloEscuchando)) {
+                                if (refEmergenciasActual != null && listenerEmergencias != null) {
+                                    refEmergenciasActual.removeEventListener(listenerEmergencias);
+                                }
+                                idAbueloEscuchando = nuevoId;
+                                escucharEmergencias(nuevoId);
+                            }
+                        } else {
+                            if (refEmergenciasActual != null && listenerEmergencias != null) {
+                                refEmergenciasActual.removeEventListener(listenerEmergencias);
+                                listenerEmergencias = null;
+                                refEmergenciasActual = null;
+                                idAbueloEscuchando = null;
+                            }
+                        }
                     }
+                    @Override public void onCancelled(@NonNull DatabaseError error) {}
                 });
     }
 
     private void escucharEmergencias(String idAbuelo) {
-        DatabaseReference refEmergencias = mDatabase.child("Usuarios").child(idAbuelo).child("EmergenciasPendientes");
+        refEmergenciasActual = mDatabase.child("Usuarios").child(idAbuelo).child("EmergenciasPendientes");
 
-        refEmergencias.addChildEventListener(new ChildEventListener() {
+        listenerEmergencias = new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 if (snapshot.exists()) {
@@ -129,7 +150,8 @@ public class ServicioAlertasCuidador extends Service {
             @Override public void onChildRemoved(@NonNull DataSnapshot snapshot) {}
             @Override public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
             @Override public void onCancelled(@NonNull DatabaseError error) {}
-        });
+        };
+        refEmergenciasActual.addChildEventListener(listenerEmergencias);
     }
 
     private void lanzarAlarmaRoja(String mensaje) {
@@ -223,6 +245,14 @@ public class ServicioAlertasCuidador extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         return START_STICKY; // Asegura que el servicio se reinicie si el sistema lo mata
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (refEmergenciasActual != null && listenerEmergencias != null) {
+            refEmergenciasActual.removeEventListener(listenerEmergencias);
+        }
     }
 
     @Nullable
