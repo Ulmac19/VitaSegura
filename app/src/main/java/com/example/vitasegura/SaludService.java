@@ -331,14 +331,18 @@ public class SaludService extends Service {
                     }
 
                     emergencia.put("tipo", tipoAlerta);
-                    emergencia.put("timestamp", ServerValue.TIMESTAMP);
 
-                    DatabaseReference refEmergencias = mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes");
-
-                    // Limpiamos alertas anteriores y subimos la nueva
-                    refEmergencias.setValue(null).addOnCompleteListener(task -> {
-                        refEmergencias.push().setValue(emergencia);
-                    });
+                    if (hayConexionInternet()) {
+                        emergencia.put("timestamp", ServerValue.TIMESTAMP);
+                        DatabaseReference refEmergencias = mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes");
+                        refEmergencias.setValue(null).addOnCompleteListener(task -> {
+                            refEmergencias.push().setValue(emergencia);
+                        });
+                    } else {
+                        String mensajeOffline = (String) emergencia.get("mensaje");
+                        AlertasOfflineDBHelper.getInstance(this)
+                                .insertarAlerta(tipoAlerta, mensajeOffline, tiempoActual);
+                    }
 
                     ultimaAlertaEnviada = tiempoActual;
 
@@ -374,14 +378,33 @@ public class SaludService extends Service {
     }
 
     private void enviarAlertaInfo(String mensaje, String tipo) {
-        HashMap<String, Object> info = new HashMap<>();
-        info.put("mensaje", mensaje);
-        info.put("tipo", tipo); //Dice si es info o emergencia
-        info.put("timestamp", ServerValue.TIMESTAMP);
+        if (hayConexionInternet()) {
+            HashMap<String, Object> info = new HashMap<>();
+            info.put("mensaje", mensaje);
+            info.put("tipo", tipo); //Dice si es info o emergencia
+            info.put("timestamp", ServerValue.TIMESTAMP);
 
-        //Nodo de las emergencias pendientes
-        mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes")
-                .push().setValue(info);
+            //Nodo de las emergencias pendientes
+            mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes")
+                    .push().setValue(info);
+        } else {
+            AlertasOfflineDBHelper.getInstance(this)
+                    .insertarAlerta(tipo, mensaje, System.currentTimeMillis());
+        }
+    }
+
+    //Metodo para verificar si hay conexion
+    private boolean hayConexionInternet() {
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            android.net.Network activeNetwork = cm.getActiveNetwork();
+            if (activeNetwork != null) {
+                android.net.NetworkCapabilities capabilities = cm.getNetworkCapabilities(activeNetwork);
+                return capabilities != null && capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+            }
+        }
+        return false;
     }
 
     @Override

@@ -107,7 +107,7 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
             Toast.makeText(AlertaEmergenciaActivity.this, "¡AYUDA SOLICITADA AL CUIDADOR!", Toast.LENGTH_LONG).show();
         }else {
             //No hay internet: Se guarda en SQLite
-            AlertasOfflineDBHelper dbHelper = new AlertasOfflineDBHelper(this);
+            AlertasOfflineDBHelper dbHelper = AlertasOfflineDBHelper.getInstance(this);
             dbHelper.insertarAlerta(tipo, mensaje, timestampActual);
 
             Toast.makeText(this, "Sin red: Alerta guardada para reenvío", Toast.LENGTH_LONG).show();

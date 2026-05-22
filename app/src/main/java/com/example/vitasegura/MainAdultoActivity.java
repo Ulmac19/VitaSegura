@@ -210,7 +210,7 @@ public class MainAdultoActivity extends AppCompatActivity {
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference()
                 .child("Usuarios").child(miUid).child("EmergenciasPendientes");
 
-        AlertasOfflineDBHelper dbHelper = new AlertasOfflineDBHelper(this);
+        AlertasOfflineDBHelper dbHelper = AlertasOfflineDBHelper.getInstance(this);
         android.database.sqlite.SQLiteDatabase db = dbHelper.getReadableDatabase();
 
         //Leer todas las alertas pendientes

@@ -17,7 +17,16 @@ public class AlertasOfflineDBHelper extends SQLiteOpenHelper {
     public static final String COL_MENSAJE = "mensaje";
     public static final String COL_TIMESTAMP = "timestamp";
 
-    public AlertasOfflineDBHelper(Context context) {
+    private static AlertasOfflineDBHelper instance;
+
+    public static synchronized AlertasOfflineDBHelper getInstance(Context context) {
+        if (instance == null) {
+            instance = new AlertasOfflineDBHelper(context.getApplicationContext());
+        }
+        return instance;
+    }
+
+    private AlertasOfflineDBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
@@ -57,14 +66,12 @@ public class AlertasOfflineDBHelper extends SQLiteOpenHelper {
         values.put(COL_TIMESTAMP, timestamp);
 
         db.insert(TABLE_NAME, null, values);
-        db.close();
     }
 
     //Eliminar al sincronizar
     public void eliminarAlertas(int id){
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_NAME, COL_ID + "=?", new String[]{String.valueOf(id)});
-        db.close();
     }
 
 }
