@@ -40,6 +40,7 @@ public class PulseraActivity extends AppCompatActivity {
     // --- CONFIGURACIÓN DE TUS MAC ---
     private final String MAC_PULSERA_1 = "1C:DB:D4:C6:4F:5A";
     private final String MAC_PULSERA_2 = "88:56:A6:5C:2E:E6";
+    private final String MAC_PULSERA_3 = "1C:DB:D4:C6:75:3E";
 
     private static final int PERM_BLE = 101;
 
@@ -147,7 +148,8 @@ public class PulseraActivity extends AppCompatActivity {
             BluetoothDevice device = result.getDevice();
             String address = device.getAddress();
 
-            if (address.equalsIgnoreCase(MAC_PULSERA_1) || address.equalsIgnoreCase(MAC_PULSERA_2)) {
+            if (address.equalsIgnoreCase(MAC_PULSERA_1) || address.equalsIgnoreCase(MAC_PULSERA_2)
+                    || address.equalsIgnoreCase(MAC_PULSERA_3)) {
                 if (!dispositivosEncontrados.contains(device)) {
                     dispositivosEncontrados.add(device);
                     @SuppressLint("MissingPermission") String name = device.getName();
