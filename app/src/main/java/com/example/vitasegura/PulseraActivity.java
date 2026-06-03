@@ -20,6 +20,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -270,4 +272,5 @@ public class PulseraActivity extends AppCompatActivity {
             sendBroadcast(intent);
         }
     };
+
 }

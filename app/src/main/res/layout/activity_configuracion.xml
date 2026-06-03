@@ -109,8 +109,8 @@
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Notificaciones" android:textColor="@color/azul_oscuro" android:textSize="18sp" android:textStyle="bold" />
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="¿Desea desactivar las notificaciones automáticas?" android:textColor="@color/azul_claro" android:textSize="14sp" />
                 <RadioGroup android:id="@+id/rg_notificaciones" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:layout_marginBottom="40dp">
-                    <RadioButton android:layout_width="match_parent" android:layout_height="wrap_content" android:text="No (por defecto)" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
-                    <RadioButton android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sí" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                    <RadioButton android:id="@+id/rb_notif_no" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="No (por defecto)" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
+                    <RadioButton android:id="@+id/rb_notif_si" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sí" android:buttonTint="@color/azul_oscuro" android:textColor="@color/menta" />
                 </RadioGroup>
             </LinearLayout>
 

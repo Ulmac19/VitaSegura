@@ -14,7 +14,16 @@ public class NotificacionesDBHelper extends SQLiteOpenHelper {
     private static final int DATABASE_VERSION = 1;
     private static final String TABLE_NOTIFICACIONES = "notificaciones";
 
-    public NotificacionesDBHelper(Context context) {
+    private static NotificacionesDBHelper instance;
+
+    public static synchronized NotificacionesDBHelper getInstance(Context context) {
+        if (instance == null) {
+            instance = new NotificacionesDBHelper(context.getApplicationContext());
+        }
+        return instance;
+    }
+
+    private NotificacionesDBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
@@ -45,7 +54,6 @@ public class NotificacionesDBHelper extends SQLiteOpenHelper {
         values.put("esEmergencia", esEmergencia ? 1 : 0);
         values.put("timestamp_ms", timestamp);
         db.insert(TABLE_NOTIFICACIONES, null, values);
-        db.close();
     }
 
     // Metodo para obtener las notificaciones (filtrando por tipo)
@@ -69,7 +77,6 @@ public class NotificacionesDBHelper extends SQLiteOpenHelper {
             } while (cursor.moveToNext());
         }
         cursor.close();
-        db.close();
         return lista;
     }
 
@@ -80,6 +87,5 @@ public class NotificacionesDBHelper extends SQLiteOpenHelper {
         long limiteTiempo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000);
 
         db.delete(TABLE_NOTIFICACIONES, "timestamp_ms < ?", new String[]{String.valueOf(limiteTiempo)});
-        db.close();
     }
 }

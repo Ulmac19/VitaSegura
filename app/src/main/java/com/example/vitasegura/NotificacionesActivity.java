@@ -53,7 +53,7 @@ public class NotificacionesActivity extends AppCompatActivity {
         rvInformacion.setLayoutManager(new LinearLayoutManager(this));
 
         // Inicializar BD y limpiar datos de más de 30 días
-        dbHelper = new NotificacionesDBHelper(this);
+        dbHelper = NotificacionesDBHelper.getInstance(this);
         dbHelper.limpiarHistorialAntiguo();
 
         // Cargar desde SQLite en lugar de datos de prueba

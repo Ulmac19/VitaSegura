@@ -106,40 +106,30 @@ public class ServicioAlertasCuidador extends Service {
                     if (mensaje != null && timestamp != null) {
                         long tiempoActual = System.currentTimeMillis();
 
-                        //Filtro de Tiempo: Solo alertas de los últimos 10 minutos (600,000 milisegundos)
-                        if (tiempoActual - timestamp <= 600000) {
+                        //Filtro de Memoria: Verificamos si esta alerta exacta ya fue procesada
+                        android.content.SharedPreferences prefs = getSharedPreferences("HistorialAlertas", Context.MODE_PRIVATE);
+                        String idAlerta = snapshot.getKey();
 
-                            //Filtro de Memoria: Verificamos si esta alerta exacta ya la hicimos sonar
-                            android.content.SharedPreferences prefs = getSharedPreferences("HistorialAlertas", Context.MODE_PRIVATE);
-                            String idAlerta = snapshot.getKey(); // El ID único que genera Firebase
+                        if (!prefs.getBoolean(idAlerta, false)) {
 
-                            if (!prefs.getBoolean(idAlerta, false)) {
+                            boolean esEmergencia = tipo == null || !tipo.startsWith("INFO_");
 
-                                //1. Determinar si es emergencia o solo infomacion
-                                boolean esEmergencia = true;
-                                if(tipo != null && tipo.startsWith("INFO_")){
-                                    esEmergencia = false;
+                            // 1. Guardar en SQLite siempre (sin importar antigüedad)
+                            NotificacionesDBHelper db = NotificacionesDBHelper.getInstance(getApplicationContext());
+                            String fechaActual = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date());
+                            String horaActual = new java.text.SimpleDateFormat("HH:mm a", java.util.Locale.getDefault()).format(new java.util.Date());
+                            db.insertarNotificacion(mensaje, horaActual, fechaActual, esEmergencia, tiempoActual);
+                            prefs.edit().putBoolean(idAlerta, true).apply();
+
+                            // 2. Lanzar notificación push solo para alertas recientes (últimos 10 min)
+                            if (tiempoActual - timestamp <= 600000) {
+                                android.content.SharedPreferences configPrefs = getSharedPreferences("VitaConfig", Context.MODE_PRIVATE);
+                                if (!configPrefs.getBoolean("notificaciones_desactivadas", false)) {
+                                    if (esEmergencia)
+                                        lanzarAlarmaRoja(mensaje);
+                                    else
+                                        lanzarAlertaInformativa(mensaje, tipo);
                                 }
-
-                                //2. Lanzar Notificacion correcta
-                                if (esEmergencia)
-                                    lanzarAlarmaRoja(mensaje);
-                                else
-                                    lanzarAlertaInformativa(mensaje, tipo);
-
-
-                                // 3. Guardar en SQLite
-                                NotificacionesDBHelper db = new NotificacionesDBHelper(getApplicationContext());
-
-                                // Generamos la fecha y hora actuales en formato texto
-                                String fechaActual = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date());
-                                String horaActual = new java.text.SimpleDateFormat("HH:mm a", java.util.Locale.getDefault()).format(new java.util.Date());
-
-                                // Insertar la notificación en la base de datos segun el tipo
-                                db.insertarNotificacion(mensaje, horaActual, fechaActual, esEmergencia, tiempoActual);
-
-                                // Guardamos que ya sonó para no repetirla si cerramos y abrimos la app
-                                prefs.edit().putBoolean(idAlerta, true).apply();
                             }
                         }
 

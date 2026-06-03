@@ -101,8 +101,13 @@ public class MainFamiliarActivity extends AppCompatActivity {
 
             @Override
             public void onLost(@NonNull Network network) {
-                // Se fue el internet -> Mostrar banner
-                runOnUiThread(() -> tvSinConexion.setVisibility(View.VISIBLE));
+                // Verificar si todavía hay otra red activa antes de mostrar el banner
+                Network redActiva = connectivityManager.getActiveNetwork();
+                NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(redActiva);
+                boolean aunConectado = caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+                if (!aunConectado) {
+                    runOnUiThread(() -> tvSinConexion.setVisibility(View.VISIBLE));
+                }
             }
         };
 

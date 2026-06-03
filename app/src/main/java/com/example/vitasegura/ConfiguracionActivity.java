@@ -20,7 +20,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
     private EditText etBuscar;
     private ImageView ivClearSearch;
     private LinearLayout sectionSalud, sectionUbicacion, sectionNotificaciones;
-    private RadioGroup rgSalud, rgUbicacion;
+    private RadioGroup rgSalud, rgUbicacion, rgNotificaciones;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +55,13 @@ public class ConfiguracionActivity extends AppCompatActivity {
             prefs.edit().putInt("frecuencia_ubicacion", minutos).apply();
         });
 
-
+        rgNotificaciones = findViewById(R.id.rg_notificaciones);
+        boolean desactivadas = prefs.getBoolean("notificaciones_desactivadas", false);
+        rgNotificaciones.check(desactivadas ? R.id.rb_notif_si : R.id.rb_notif_no);
+        rgNotificaciones.setOnCheckedChangeListener((group, checkedId) -> {
+            boolean desactivar = (checkedId == R.id.rb_notif_si);
+            prefs.edit().putBoolean("notificaciones_desactivadas", desactivar).apply();
+        });
 
         // Vincular vistas
         etBuscar = findViewById(R.id.et_buscar_config);
