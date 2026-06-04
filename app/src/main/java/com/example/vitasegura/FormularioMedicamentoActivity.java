@@ -31,6 +31,7 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
     private EditText etNombre, etFrecuencia, etHora, etDosis, etNotas;
     private Button btnAccion;
     private TextView tvTitulo;
+    private androidx.cardview.widget.CardView cvHora;
 
     private DatabaseReference mDatabase;
     private String uidAbuelo;
@@ -50,6 +51,7 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         etDosis = findViewById(R.id.et_dosis);
         etNotas = findViewById(R.id.et_notas);
         btnAccion = findViewById(R.id.btn_accion);
+        cvHora = findViewById(R.id.cv_hora);
 
         findViewById(R.id.iv_back_form).setOnClickListener(v -> finish());
         mDatabase = FirebaseDatabase.getInstance().getReference();
@@ -69,10 +71,14 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
             tvTitulo.setText("Editar\nRecordatorio");
             btnAccion.setText("Guardar Cambios");
             etNombre.setText(getIntent().getStringExtra("NOMBRE"));
-            etFrecuencia.setText(getIntent().getStringExtra("FRECUENCIA"));
+            String frecEditar = getIntent().getStringExtra("FRECUENCIA");
+            etFrecuencia.setText(frecEditar);
             etHora.setText(getIntent().getStringExtra("HORA"));
             etDosis.setText(getIntent().getStringExtra("DOSIS"));
             etNotas.setText(getIntent().getStringExtra("NOTAS"));
+            if ("Solo si hay dolor".equals(frecEditar)) {
+                cvHora.setVisibility(View.GONE);
+            }
         }
 
         btnAccion.setOnClickListener(v -> guardarMedicamento());
@@ -101,7 +107,15 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         String[] opciones = {"Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Solo si hay dolor"};
         new AlertDialog.Builder(this)
                 .setTitle("Selecciona Frecuencia")
-                .setItems(opciones, (dialog, which) -> etFrecuencia.setText(opciones[which]))
+                .setItems(opciones, (dialog, which) -> {
+                    etFrecuencia.setText(opciones[which]);
+                    if (opciones[which].equals("Solo si hay dolor")) {
+                        etHora.setText("");
+                        cvHora.setVisibility(View.GONE);
+                    } else {
+                        cvHora.setVisibility(View.VISIBLE);
+                    }
+                })
                 .show();
     }
 
@@ -112,7 +126,8 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         String dosis = etDosis.getText().toString().trim();
         String notas = etNotas.getText().toString().trim();
 
-        if (nombre.isEmpty() || frecuencia.isEmpty() || hora.isEmpty() || dosis.isEmpty()) {
+        boolean esDolor = frecuencia.equals("Solo si hay dolor");
+        if (nombre.isEmpty() || frecuencia.isEmpty() || dosis.isEmpty() || (!esDolor && hora.isEmpty())) {
             Toast.makeText(this, "Llena todos los campos obligatorios", Toast.LENGTH_SHORT).show();
             return;
         }

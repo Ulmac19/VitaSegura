@@ -8,6 +8,9 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Calendar;
+import java.util.Locale;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -51,6 +54,7 @@ public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAd
             holder.tvFrecuencia.setText("Solo en caso de dolor");
             holder.tvHora.setText("Libre");
 
+
             //Aparecer el boton de tomar
             holder.btnTomarDolor.setVisibility(View.VISIBLE);
 
@@ -58,10 +62,10 @@ public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAd
             holder.btnTomarDolor.setOnClickListener(v -> {
                 enviarAvisoTomaDolor(med.getNombre(), v.getContext());
             });
-        }else {
+        } else {
             // Es un medicamento normal con horario
-            holder.tvFrecuencia.setText(freq); // Mostrará "Cada 8 horas" etc.
-            holder.tvHora.setText(med.getHora());
+            holder.tvFrecuencia.setText(freq);
+            holder.tvHora.setText(calcularProximaToma(med.getHora(), freq));
 
             // Ocultamos el botón para que no lo presionen por error
             holder.btnTomarDolor.setVisibility(View.GONE);
@@ -71,6 +75,40 @@ public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAd
     @Override
     public int getItemCount() {
         return lista.size();
+    }
+
+    private String calcularProximaToma(String hora, String frecuencia) {
+        try {
+            int frecHoras = Integer.parseInt(frecuencia.replaceAll("[^0-9]", ""));
+            if (frecHoras <= 0) return hora;
+
+            int frecMinutos = frecHoras * 60;
+            String[] partes = hora.split(":");
+            int minutosTotalesInicio = Integer.parseInt(partes[0].trim()) * 60
+                    + Integer.parseInt(partes[1].trim());
+
+            Calendar ahora = Calendar.getInstance();
+            int minutosActuales = ahora.get(Calendar.HOUR_OF_DAY) * 60 + ahora.get(Calendar.MINUTE);
+
+            int maxTomas = (24 * 60) / frecMinutos;
+            int proximaEnMinutos = -1;
+            int primeraToma = Integer.MAX_VALUE;
+
+            for (int i = 0; i <= maxTomas; i++) {
+                int minutosToma = (minutosTotalesInicio + i * frecMinutos) % 1440;
+                if (minutosToma < primeraToma) primeraToma = minutosToma;
+                if (minutosToma >= minutosActuales && (proximaEnMinutos == -1 || minutosToma < proximaEnMinutos)) {
+                    proximaEnMinutos = minutosToma;
+                }
+            }
+
+            // Si ya pasaron todas las tomas del día, mostrar la primera del día siguiente
+            int resultado = (proximaEnMinutos != -1) ? proximaEnMinutos : primeraToma;
+            return String.format(Locale.getDefault(), "%02d:%02d", resultado / 60, resultado % 60);
+
+        } catch (Exception e) {
+            return hora;
+        }
     }
 
     //Metodo para enviar aviso de tomar medicamento
