@@ -1,121 +1,123 @@
-[README_VitaSegura.md](https://github.com/user-attachments/files/28676784/README_VitaSegura.md)
+[README_VitaSegura.md](https://github.com/user-attachments/files/28676874/README_VitaSegura.md)
 # VitaSegura 🩺
 
-> Dispositivo wearable de monitoreo biométrico continuo orientado a adultos mayores, con detección automática de caídas.
+> Continuous biometric monitoring wearable device for elderly users, with automatic fall detection.
 
 ---
 
-## Descripción general
+## Overview
 
-VitaSegura es un sistema embebido desarrollado sobre el microcontrolador **ESP32** que permite monitorear en tiempo real el estado de salud de adultos mayores. El dispositivo mide frecuencia cardíaca, saturación de oxígeno en sangre (SpO2) y detecta caídas de manera automática, emitiendo alertas en menos de 2 segundos ante eventos críticos.
+VitaSegura is an embedded system built on the **ESP32** microcontroller that enables real-time health monitoring for elderly individuals. The device measures heart rate and blood oxygen saturation (SpO2), and automatically detects falls — triggering alerts in under 2 seconds upon critical events.
 
-El proyecto nació de la necesidad de ofrecer una solución accesible, autónoma y de bajo consumo energético para el cuidado de personas en situación de vulnerabilidad.
-
----
-
-## Características principales
-
-- **Monitoreo de frecuencia cardíaca** en tiempo real mediante sensor biométrico
-- **Medición de SpO2** (saturación de oxígeno en sangre)
-- **Detección automática de caídas** con tiempo de respuesta menor a 2 segundos
-- **Gestión de bajo consumo** mediante modo deep sleep del ESP32
-- **Arquitectura modular** con librerías de GPS desacopladas, permitiendo operar sin dependencia de ubicación y reduciendo el consumo energético ~30%
-- **Interrupciones de hardware** para respuesta inmediata ante eventos
+The project was born from the need to provide an accessible, autonomous, and low-power solution for the care of vulnerable people.
 
 ---
 
-## Stack tecnológico
+## Key features
 
-| Componente | Tecnología |
+- **Real-time heart rate monitoring** via biometric sensor
+- **SpO2 measurement** (blood oxygen saturation)
+- **Automatic fall detection** with response time under 2 seconds
+- **Low-power management** using ESP32 deep sleep mode
+- **Modular architecture** with decoupled GPS libraries, enabling location-independent operation and reducing energy consumption by ~30%
+- **Hardware interrupts** for immediate response to critical events
+
+---
+
+## Tech stack
+
+| Component | Technology |
 |---|---|
-| Microcontrolador | ESP32 |
-| Lenguaje | C++ |
-| Sensores | Sensor biométrico (FC/SpO2), acelerómetro |
-| Localización | GPS (módulo desacoplado) |
+| Microcontroller | ESP32 |
+| Language | C++ |
+| Sensors | Biometric sensor (HR/SpO2), accelerometer |
+| Location | GPS (decoupled module) |
 | Firmware | Arduino IDE / FreeRTOS |
-| Gestión energética | Deep sleep, interrupciones HW |
+| Power management | Deep sleep, hardware interrupts |
 
 ---
 
-## Arquitectura del sistema
+## System architecture
 
 ```
 ┌─────────────────────────────────────────────┐
 │                  ESP32                       │
 │                                             │
 │  ┌──────────┐   ┌──────────┐   ┌─────────┐ │
-│  │ Sensor   │   │Aceleró-  │   │ Módulo  │ │
-│  │ FC/SpO2  │   │  metro   │   │  GPS*   │ │
+│  │  HR/SpO2 │   │  Accel-  │   │   GPS   │ │
+│  │  Sensor  │   │erometer  │   │ Module* │ │
 │  └────┬─────┘   └────┬─────┘   └────┬────┘ │
 │       │              │              │       │
 │  ┌────▼──────────────▼──────────────▼────┐  │
-│  │         Capa de procesamiento         │  │
-│  │   Lectura · Filtrado · Detección      │  │
+│  │          Processing layer             │  │
+│  │     Reading · Filtering · Detection   │  │
 │  └────────────────────┬──────────────────┘  │
 │                       │                     │
 │              ┌────────▼────────┐            │
-│              │  Sistema alerta │            │
-│              │  (< 2 seg.)     │            │
+│              │   Alert system  │            │
+│              │   (< 2 sec.)    │            │
 │              └─────────────────┘            │
 └─────────────────────────────────────────────┘
 
-* Módulo GPS desacoplado — versión independiente de ubicación disponible
+* Decoupled GPS module — location-independent version available
 ```
 
 ---
 
-## Resultados de pruebas
+## Test results
 
-| Métrica | Resultado |
+| Metric | Result |
 |---|---|
-| Tiempo de respuesta ante caída | < 2 segundos |
-| Reducción de consumo energético (versión sin GPS) | ~30% |
-| Precisión de detección de caídas | En validación |
-| Autonomía estimada de batería | En pruebas de campo |
+| Fall detection response time | < 2 seconds |
+| Energy consumption reduction (GPS-free version) | ~30% |
+| Fall detection accuracy | Under validation |
+| Estimated battery life | Field testing in progress |
 
-## Cómo ejecutar
+---
 
-### Requisitos previos
+## Getting started
 
-- Arduino IDE 2.x o PlatformIO
-- Placa: ESP32 (cualquier variante con WiFi/BT)
-- Librerías necesarias (ver `lib/`)
+### Prerequisites
 
-### Pasos
+- Arduino IDE 2.x or PlatformIO
+- Board: ESP32 (any Wi-Fi/BT variant)
+- Required libraries (see `lib/`)
+
+### Steps
 
 ```bash
-# 1. Clonar el repositorio
+# 1. Clone the repository
 git clone https://github.com/Pelayo04/VitaSegura.git
 
-# 2. Abrir el proyecto en Arduino IDE o PlatformIO
+# 2. Open the project in Arduino IDE or PlatformIO
 
-# 3. Seleccionar la placa ESP32 correspondiente
+# 3. Select your ESP32 board
 
-# 4. Configurar parámetros en src/config.h (umbrales de alerta, pines)
+# 4. Configure parameters in src/config.h (alert thresholds, pin mapping)
 
-# 5. Compilar y cargar al dispositivo
+# 5. Compile and flash to the device
 ```
 
 ---
 
-## Aprendizajes clave del proyecto
+## Key learnings
 
-- Gestión de recursos en sistemas embebidos con memoria y CPU limitada
-- Desacoplamiento de módulos para mejorar portabilidad y consumo
-- Uso de interrupciones de hardware para garantizar respuesta en tiempo real
-- Diseño orientado a usuarios no técnicos (adultos mayores)
-
----
-
-## Estado del proyecto
-
-🟡 **En desarrollo** — Prototipo funcional. Pruebas de campo en curso.
+- Resource management on embedded systems with limited memory and CPU
+- Module decoupling to improve portability and reduce power consumption
+- Hardware interrupt usage to guarantee real-time response
+- UX design oriented toward non-technical users (elderly population)
 
 ---
 
-## Autor
+## Project status
+
+🟡 **In progress** — Functional prototype. Field testing underway.
+
+---
+
+## Author
 
 **Daniel Eduardo Pelayo Gómez**
 **Ulises Alberto Macías Ramírez**
-Tecnólogos en Desarrollo de Software — CETI Colomos
+Software Development Technologist — CETI Colomos
 [LinkedIn](https://www.linkedin.com/in/daniel-pelayo-4097ab414) · [GitHub](https://github.com/Pelayo04)
