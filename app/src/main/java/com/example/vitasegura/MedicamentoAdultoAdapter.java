@@ -77,7 +77,7 @@ public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAd
         return lista.size();
     }
 
-    private String calcularProximaToma(String hora, String frecuencia) {
+    private String calcularProximaToma(String hora, String frecuencia) { 
         try {
             int frecHoras = Integer.parseInt(frecuencia.replaceAll("[^0-9]", ""));
             if (frecHoras <= 0) return hora;
