@@ -118,7 +118,9 @@ git clone https://github.com/Pelayo04/VitaSegura.git
 ## Author
 
 Software Development Technologist — CETI Colomos
+
 **Ulises Alberto Macías Ramírez**
 [LinkedIn](https://www.linkedin.com/in/ulmac19) · [GitHub](https://github.com/Ulmac19)
+
 **Daniel Eduardo Pelayo Gómez**
 [LinkedIn](https://www.linkedin.com/in/daniel-pelayo-4097ab414) · [GitHub](https://github.com/Pelayo04)
