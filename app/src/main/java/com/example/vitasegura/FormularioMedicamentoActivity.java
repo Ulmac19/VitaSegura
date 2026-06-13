@@ -26,6 +26,14 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Formulario para crear o editar un medicamento, usado solo por el cuidador.
+ *
+ * Funciona en dos modos según reciba o no un MEDICAMENTO_ID: alta o edición.
+ * Cuando la frecuencia es "Solo si hay dolor" oculta el campo de hora y omite su
+ * validación. Al crear un medicamento nuevo (no al editar) genera además una
+ * notificación pendiente para el adulto mayor.
+ */
 public class FormularioMedicamentoActivity extends AppCompatActivity {
 
     private EditText etNombre, etFrecuencia, etHora, etDosis, etNotas;
@@ -66,7 +74,7 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         // Configurar Selector de Frecuencia
         etFrecuencia.setOnClickListener(v -> mostrarDialogoFrecuencia());
 
-        // Si es Modo Edición, rellenar los campos
+        // En modo edición, precarga los campos con los datos recibidos
         if (medicamentoIdEditar != null) {
             tvTitulo.setText("Editar\nRecordatorio");
             btnAccion.setText("Guardar Cambios");
@@ -90,6 +98,7 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         });
     }
 
+    /** Abre el selector de hora y vuelca la hora elegida en formato "HH:mm". */
     private void mostrarTimePicker() {
         Calendar calendario = Calendar.getInstance();
         int horaActual = calendario.get(Calendar.HOUR_OF_DAY);
@@ -103,6 +112,7 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
         timePickerDialog.show();
     }
 
+    /** Muestra las opciones de frecuencia y oculta el campo de hora si es "Solo si hay dolor". */
     private void mostrarDialogoFrecuencia() {
         String[] opciones = {"Cada 8 horas", "Cada 12 horas", "Cada 24 horas", "Solo si hay dolor"};
         new AlertDialog.Builder(this)
@@ -119,6 +129,7 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
                 .show();
     }
 
+    /** Valida el formulario y guarda el medicamento (alta o edición) tras confirmar. */
     private void guardarMedicamento() {
         String nombre = etNombre.getText().toString().trim();
         String frecuencia = etFrecuencia.getText().toString().trim();
@@ -132,7 +143,7 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
             return;
         }
 
-        //Configurar los textos del dialogo dependiendo de si es edicion o nuevo medicamento
+        // Adapta los textos del diálogo según sea alta o edición
         String tituloDialogo = (medicamentoIdEditar != null) ? "Confirmar Cambios" : "Nuevo Medicamento";
         String mensajeDialogo = (medicamentoIdEditar != null) ?
                 "¿Estás seguro de que deseas actualizar la información de " + nombre + "?" :
@@ -143,15 +154,15 @@ public class FormularioMedicamentoActivity extends AppCompatActivity {
                 .setMessage(mensajeDialogo)
                 .setPositiveButton("Guardar", (dialog, which) -> {
 
-                    // Si es nuevo, generamos un ID. Si es edición, usamos el existente.
+                    // Reutiliza el ID en edición; genera uno nuevo en alta
                     String medId = (medicamentoIdEditar != null) ? medicamentoIdEditar : mDatabase.push().getKey();
 
                     Medicamento nuevoMedicamento = new Medicamento(medId, nombre, frecuencia, hora, dosis, notas);
 
-                    // Guardar en Firebase
                     mDatabase.child("Usuarios").child(uidAbuelo).child("Medicamentos").child(medId).setValue(nuevoMedicamento)
                             .addOnSuccessListener(aVoid -> {
 
+                                // Solo en alta se notifica al adulto mayor del nuevo medicamento
                                 if (medicamentoIdEditar == null) {
                                     Map<String, Object> notif = new HashMap<>();
                                     notif.put("titulo", "Nuevo Medicamento Asignado");

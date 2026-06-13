@@ -19,6 +19,13 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Pantalla de historial de notificaciones del cuidador.
+ *
+ * Carga el historial desde SQLite y lo separa en dos listas: emergencias e
+ * información. Permite filtrar en vivo por texto y por fecha (selector de
+ * calendario), y purga los registros con más de 30 días al abrirse.
+ */
 public class NotificacionesActivity extends AppCompatActivity {
 
     private RecyclerView rvEmergencias, rvInformacion;
@@ -28,9 +35,9 @@ public class NotificacionesActivity extends AppCompatActivity {
     private EditText etBuscar;
     private ImageView ivClearSearch;
 
-    //Variables para el filtro de fecha y Base de Datos
+    // Filtro por fecha y acceso a la base de datos local
     private NotificacionesDBHelper dbHelper;
-    private String fechaSeleccionada = null; // Guarda la fecha del calendario
+    private String fechaSeleccionada = null; // fecha elegida en el calendario
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,14 +59,13 @@ public class NotificacionesActivity extends AppCompatActivity {
         rvInformacion = findViewById(R.id.rv_informacion);
         rvInformacion.setLayoutManager(new LinearLayoutManager(this));
 
-        // Inicializar BD y limpiar datos de más de 30 días
+        // Inicializa la BD y purga las notificaciones de más de 30 días
         dbHelper = NotificacionesDBHelper.getInstance(this);
         dbHelper.limpiarHistorialAntiguo();
 
-        // Cargar desde SQLite en lugar de datos de prueba
         cargarDatosDesdeDB();
 
-        //Filtrar por texto mientras escribes
+        // Filtra el historial por texto a medida que se escribe
         etBuscar.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -82,13 +88,13 @@ public class NotificacionesActivity extends AppCompatActivity {
         });
 
         ivClearSearch.setOnClickListener(v -> {
-            etBuscar.setText(""); // Disparará aplicarFiltros automáticamente
-            fechaSeleccionada = null; // Limpiamos también la fecha si tocan la cruz
+            etBuscar.setText(""); // el TextWatcher reaplicará los filtros
+            fechaSeleccionada = null; // también limpia el filtro de fecha
             ivClearSearch.setVisibility(View.GONE);
             aplicarFiltros("", null);
         });
 
-        //Filtrar por fecha al tocar el calendario
+        // Filtra por fecha mediante el selector de calendario
         findViewById(R.id.iv_calendario_filtro).setOnClickListener(v -> mostrarDatePicker());
 
         // Botón atrás
@@ -102,29 +108,29 @@ public class NotificacionesActivity extends AppCompatActivity {
         });
     }
 
+    /** Carga el historial desde SQLite, lo separa por tipo y prepara los adapters. */
     private void cargarDatosDesdeDB() {
         listaOriginal = new ArrayList<>();
 
-        // Obtenemos las listas directamente de SQLite
         List<Notificacion> listaEmergencias = dbHelper.obtenerNotificaciones(true);
         List<Notificacion> listaInfo = dbHelper.obtenerNotificaciones(false);
 
-        // Juntamos ambas en la lista maestra para que el buscador funcione con todas
+        // Lista maestra con ambas, para que el buscador filtre sobre el historial
         listaOriginal.addAll(listaEmergencias);
         listaOriginal.addAll(listaInfo);
 
-        // Inicializamos adaptadores
         adapterEmergencias = new NotificacionAdapter(listaEmergencias);
         adapterInformacion = new NotificacionAdapter(listaInfo);
 
         rvEmergencias.setAdapter(adapterEmergencias);
         rvInformacion.setAdapter(adapterInformacion);
 
-        // Ocultar etiquetas si no hay datos
+        // Oculta las etiquetas de sección vacías
         tvLabelEmergencia.setVisibility(listaEmergencias.isEmpty() ? View.GONE : View.VISIBLE);
         tvLabelInfo.setVisibility(listaInfo.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
+    /** Filtra una lista para quedarse solo con emergencias o solo con avisos informativos. */
     private List<Notificacion> obtenerPorTipo(List<Notificacion> lista, boolean buscarEmergencia) {
         List<Notificacion> resultado = new ArrayList<>();
         for (Notificacion n : lista) {
@@ -135,18 +141,19 @@ public class NotificacionesActivity extends AppCompatActivity {
         return resultado;
     }
 
+    /** Abre el calendario y aplica el filtro por la fecha seleccionada. */
     private void mostrarDatePicker() {
         final Calendar c = Calendar.getInstance();
         new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-            // Formatear la fecha como "dd/MM/yyyy"
             fechaSeleccionada = String.format(Locale.getDefault(), "%02d/%02d/%d", dayOfMonth, (month + 1), year);
             aplicarFiltros(etBuscar.getText().toString(), fechaSeleccionada);
 
-            // Mostramos la cruz para que puedan quitar el filtro de fecha
+            // Muestra la cruz para poder limpiar el filtro de fecha
             ivClearSearch.setVisibility(View.VISIBLE);
         }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
     }
 
+    /** Aplica los filtros de texto y fecha y refresca ambas listas de notificaciones. */
     private void aplicarFiltros(String texto, String fecha) {
         List<Notificacion> filtrada = new ArrayList<>();
         String busqueda = (texto != null) ? texto.toLowerCase() : "";

@@ -18,11 +18,19 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.List;
 
+/**
+ * Adaptador de RecyclerView que muestra la lista de medicamentos en la vista
+ * del cuidador.
+ *
+ * Permite editar y eliminar cada medicamento sobre el nodo
+ * Usuarios/[uidAbuelo]/Medicamentos/ del adulto mayor seleccionado. Muestra la
+ * hora inicial fija (no la próxima toma calculada).
+ */
 public class MedicamentoCuidadorAdapter extends RecyclerView.Adapter<MedicamentoCuidadorAdapter.ViewHolder> {
 
     private List<Medicamento> lista;
     private Context context;
-    private String uidAbuelo; // Necesario para saber de qué base de datos borrar
+    private String uidAbuelo; // UID del adulto mayor cuyos medicamentos se editan/eliminan
 
     public MedicamentoCuidadorAdapter(List<Medicamento> lista, Context context) {
         this.lista = lista;

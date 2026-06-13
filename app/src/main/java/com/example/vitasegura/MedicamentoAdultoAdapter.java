@@ -22,6 +22,14 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Adaptador de RecyclerView que muestra la lista de medicamentos en la vista
+ * del adulto mayor (modo solo lectura).
+ *
+ * A diferencia del adaptador del cuidador, calcula dinámicamente la próxima hora
+ * de toma a partir de la hora inicial y la frecuencia. Los medicamentos de tipo
+ * "Solo si hay dolor" muestran un botón "Tomar" que notifica al cuidador.
+ */
 public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAdultoAdapter.ViewHolder> {
 
     private List<Medicamento> lista;
@@ -33,7 +41,6 @@ public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAd
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Inflamos tu diseño sin botones
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_medicamento_abuelo, parent, false);
         return new ViewHolder(v);
     }
@@ -48,26 +55,23 @@ public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAd
 
         String freq = med.getFrecuencia();
 
-        //Validacion LOGICA: Es para dolor o normal
+        // Diferencia entre medicamento de horario fijo y medicamento "solo si hay dolor"
         if(freq != null && freq.equals("Solo si hay dolor")){
-            //Textos adaptados para el dolor
+            // Medicamento de toma libre: no tiene hora fija
             holder.tvFrecuencia.setText("Solo en caso de dolor");
             holder.tvHora.setText("Libre");
 
-
-            //Aparecer el boton de tomar
+            // Muestra el botón que permite al adulto mayor avisar que tomó la dosis
             holder.btnTomarDolor.setVisibility(View.VISIBLE);
-
-            // Acción al presionar el botón
             holder.btnTomarDolor.setOnClickListener(v -> {
                 enviarAvisoTomaDolor(med.getNombre(), v.getContext());
             });
         } else {
-            // Es un medicamento normal con horario
+            // Medicamento con horario: muestra la próxima toma calculada dinámicamente
             holder.tvFrecuencia.setText(freq);
             holder.tvHora.setText(calcularProximaToma(med.getHora(), freq));
 
-            // Ocultamos el botón para que no lo presionen por error
+            // Oculta el botón de toma para evitar pulsaciones accidentales
             holder.btnTomarDolor.setVisibility(View.GONE);
         }
     }
@@ -77,7 +81,18 @@ public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAd
         return lista.size();
     }
 
-    private String calcularProximaToma(String hora, String frecuencia) { 
+    /**
+     * Calcula la siguiente hora de toma dentro del ciclo de 24 horas.
+     *
+     * A partir de la hora inicial y el intervalo de frecuencia, recorre todas las
+     * tomas del día y devuelve la primera que aún no ha pasado. Si ya pasaron
+     * todas, devuelve la primera toma del día siguiente.
+     *
+     * @param hora       hora inicial en formato "HH:mm".
+     * @param frecuencia texto de frecuencia del que se extrae el intervalo en horas.
+     * @return la próxima hora de toma en formato "HH:mm"; la hora original si el formato es inválido.
+     */
+    private String calcularProximaToma(String hora, String frecuencia) {
         try {
             int frecHoras = Integer.parseInt(frecuencia.replaceAll("[^0-9]", ""));
             if (frecHoras <= 0) return hora;
@@ -111,7 +126,13 @@ public class MedicamentoAdultoAdapter extends RecyclerView.Adapter<MedicamentoAd
         }
     }
 
-    //Metodo para enviar aviso de tomar medicamento
+    /**
+     * Notifica al cuidador que el adulto mayor tomó un medicamento para el dolor.
+     *
+     * Escribe un registro de tipo INFO_MED en
+     * Usuarios/[miUid]/EmergenciasPendientes/, que el servicio del cuidador
+     * interpreta como un aviso informativo (no una emergencia).
+     */
     private void enviarAvisoTomaDolor(String nombreMed, Context context) {
         if(FirebaseAuth.getInstance().getCurrentUser() == null) return;
 

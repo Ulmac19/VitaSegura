@@ -20,6 +20,13 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+/**
+ * Servicio en primer plano que entrega al adulto mayor las notificaciones
+ * encoladas por el cuidador.
+ *
+ * Escucha el nodo Usuarios/[uid]/NotificacionesPendientes y, por cada entrada
+ * nueva, muestra una notificación local y borra el registro para no repetirlo.
+ */
 public class ServicioNotificacionesAbuelo extends Service {
 
     private static final String CANAL_ID = "Canal_Servicio_Vita";
@@ -30,7 +37,7 @@ public class ServicioNotificacionesAbuelo extends Service {
     public void onCreate() {
         super.onCreate();
 
-        // Crear el canal para el Foreground Service
+        // Canal de notificación requerido por el foreground service
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel canal = new NotificationChannel(
                     CANAL_ID, "Servicio en Segundo Plano", NotificationManager.IMPORTANCE_LOW);
@@ -38,15 +45,15 @@ public class ServicioNotificacionesAbuelo extends Service {
             if (manager != null) manager.createNotificationChannel(canal);
         }
 
-        //Iniciar el Foreground Service (Obligatorio en Android para que no lo maten)
+        // Notificación persistente que mantiene vivo el foreground service
         Notification notificacionPersistente = new NotificationCompat.Builder(this, CANAL_ID)
                 .setContentTitle("VitaSegura Activa")
                 .setContentText("Escuchando notificaciones...")
-                .setSmallIcon(R.drawable.medicamentos_logo) // Tu ícono
+                .setSmallIcon(R.drawable.medicamentos_logo)
                 .build();
         startForeground(1, notificacionPersistente);
 
-        //Empezar a escuchar Firebase
+        // Comienza a escuchar las notificaciones pendientes en Firebase
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             miUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
             mDatabase = FirebaseDatabase.getInstance().getReference().child("Usuarios").child(miUid).child("NotificacionesPendientes");
@@ -54,6 +61,7 @@ public class ServicioNotificacionesAbuelo extends Service {
         }
     }
 
+    /** Suscribe el listener que reacciona a cada nueva notificación pendiente. */
     private void escucharNotificaciones() {
         mDatabase.addChildEventListener(new ChildEventListener() {
             @Override
@@ -64,7 +72,7 @@ public class ServicioNotificacionesAbuelo extends Service {
 
                     if (titulo != null && mensaje != null) {
                         lanzarAlarmaVisual(titulo, mensaje);
-                        snapshot.getRef().removeValue(); // Borramos para no repetir
+                        snapshot.getRef().removeValue(); // se elimina para no volver a notificarla
                     }
                 }
             }
@@ -76,6 +84,7 @@ public class ServicioNotificacionesAbuelo extends Service {
         });
     }
 
+    /** Construye y muestra la notificación local visible para el adulto mayor. */
     private void lanzarAlarmaVisual(String titulo, String mensaje) {
         String canalAlarma = "Canal_Alarmas_Meds";
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -95,7 +104,7 @@ public class ServicioNotificacionesAbuelo extends Service {
                 .setSmallIcon(R.drawable.medicamentos_logo)
                 .setContentTitle(titulo)
                 .setContentText(mensaje)
-                .setPriority(NotificationCompat.PRIORITY_HIGH) // Importancia ALTA para que suene
+                .setPriority(NotificationCompat.PRIORITY_HIGH) // prioridad alta para que suene y se muestre
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
 
@@ -104,7 +113,7 @@ public class ServicioNotificacionesAbuelo extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY; // Si el sistema lo mata, lo reinicia automáticamente
+        return START_STICKY; // el sistema reinicia el servicio si lo detiene
     }
 
     @Nullable

@@ -1,5 +1,12 @@
 package com.example.vitasegura;
 
+/**
+ * Modelo de datos que representa a un usuario de la aplicación.
+ *
+ * Se corresponde con los nodos Usuarios/[uid] de Firebase Realtime Database.
+ * El campo esPrincipal determina el rol: true para el cuidador (Familiar) y
+ * false para el adulto mayor.
+ */
 public class Usuario {
     private String uid;
     private String nombre;
@@ -8,11 +15,11 @@ public class Usuario {
     private boolean esPrincipal;
     private String fotoPerfil;
 
-    // CONSTRUCTOR VACÍO
+    /** Constructor vacío requerido por Firebase para la deserialización automática. */
     public Usuario() {
     }
 
-    // 2. Constructor con todos los parámetros
+    /** Construye un usuario con todos sus atributos. */
     public Usuario(String uid, String nombre, String correo, String telefono, boolean esPrincipal, String fotoPerfil) {
         this.uid = uid;
         this.nombre = nombre;

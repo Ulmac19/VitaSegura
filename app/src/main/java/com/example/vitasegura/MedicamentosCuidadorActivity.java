@@ -28,6 +28,13 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Pantalla donde el cuidador gestiona los medicamentos del adulto mayor vinculado.
+ *
+ * Resuelve el adulto asociado a partir del nodo Vinculos, muestra su lista de
+ * medicamentos en tiempo real y permite agregar nuevos recordatorios mediante
+ * FormularioMedicamentoActivity. La edición y el borrado se delegan en el adapter.
+ */
 public class MedicamentosCuidadorActivity extends AppCompatActivity {
 
     private RecyclerView rvMedicamentos;
@@ -51,7 +58,7 @@ public class MedicamentosCuidadorActivity extends AppCompatActivity {
         rvMedicamentos.setLayoutManager(new LinearLayoutManager(this));
 
         listaMedicamentos = new ArrayList<>();
-        // El adaptador necesita saber el ID del abuelo para poder borrar medicamentos
+        // El adapter requiere el UID del adulto mayor para editar y eliminar
         adapter = new MedicamentoCuidadorAdapter(listaMedicamentos, this);
         rvMedicamentos.setAdapter(adapter);
 
@@ -83,14 +90,15 @@ public class MedicamentosCuidadorActivity extends AppCompatActivity {
         });
     }
 
+    /** Obtiene el adulto vinculado, configura el título y carga sus medicamentos. */
     private void obtenerIdAbueloYMedicamentos() {
         mDatabase.child("Vinculos").child(uidCuidador).child("id_adulto_vinculado")
                 .get().addOnCompleteListener(task -> {
                     if (task.isSuccessful() && task.getResult().exists()) {
                         uidAbueloActual = task.getResult().getValue(String.class);
-                        adapter.setUidAbuelo(uidAbueloActual); // Pasarle el ID al adaptador
+                        adapter.setUidAbuelo(uidAbueloActual); // habilita editar/eliminar en el adapter
 
-                        // Obtener nombre para el título
+                        // Usa el primer nombre del adulto para el título de la pantalla
                         mDatabase.child("Usuarios").child(uidAbueloActual).child("nombre").get().addOnCompleteListener(t -> {
                             if (t.isSuccessful() && t.getResult().exists()) {
                                 String nombreCompleto = t.getResult().getValue(String.class);
@@ -102,12 +110,12 @@ public class MedicamentosCuidadorActivity extends AppCompatActivity {
                             }
                         });
 
-                        // Escuchar lista de medicamentos en tiempo real
                         cargarMedicamentos(uidAbueloActual);
                     }
                 });
     }
 
+    /** Escucha en tiempo real la lista de medicamentos del adulto y refresca el adapter. */
     private void cargarMedicamentos(String uidAbuelo) {
         mDatabase.child("Usuarios").child(uidAbuelo).child("Medicamentos")
                 .addValueEventListener(new ValueEventListener() {

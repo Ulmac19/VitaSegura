@@ -1,5 +1,12 @@
 package com.example.vitasegura;
 
+/**
+ * Modelo de datos que representa una entrada del historial de notificaciones.
+ *
+ * Se utiliza para mostrar el historial persistido en SQLite mediante
+ * NotificacionesDBHelper. El campo esEmergencia distingue las alertas críticas
+ * (que se resaltan en rojo) de los avisos informativos.
+ */
 public class Notificacion {
     private String mensaje;
     private String hora;

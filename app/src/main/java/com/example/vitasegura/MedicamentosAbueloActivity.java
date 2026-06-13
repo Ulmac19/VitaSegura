@@ -22,6 +22,13 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Pantalla de medicamentos del adulto mayor (solo lectura).
+ *
+ * Escucha en tiempo real su propia lista de medicamentos en Firebase y la
+ * muestra a través de MedicamentoAdultoAdapter, que calcula la próxima toma de
+ * cada uno. El adulto no puede crear ni editar medicamentos, solo consultarlos.
+ */
 public class MedicamentosAbueloActivity extends AppCompatActivity {
 
     private RecyclerView rvMedicamentos;
@@ -64,13 +71,13 @@ public class MedicamentosAbueloActivity extends AppCompatActivity {
         });
     }
 
+    /** Escucha en tiempo real los medicamentos del propio adulto y refresca el adapter. */
     private void cargarMisMedicamentos() {
-        // Escucha en tiempo real SU PROPIA lista de medicamentos
         mDatabase.child("Usuarios").child(miUid).child("Medicamentos")
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        listaMedicamentos.clear(); // Limpiamos la lista vieja
+                        listaMedicamentos.clear();
 
                         for (DataSnapshot dato : snapshot.getChildren()) {
                             Medicamento med = dato.getValue(Medicamento.class);
@@ -78,7 +85,6 @@ public class MedicamentosAbueloActivity extends AppCompatActivity {
                                 listaMedicamentos.add(med);
                             }
                         }
-                        // Avisar al adaptador que dibuje los nuevos datos
                         adapter.notifyDataSetChanged();
                     }
 

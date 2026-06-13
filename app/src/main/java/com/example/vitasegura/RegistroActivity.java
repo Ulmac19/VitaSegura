@@ -20,6 +20,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+/**
+ * Pantalla de registro de nuevos usuarios.
+ *
+ * Crea la cuenta en Firebase Auth, valida la robustez de la contraseña y guarda
+ * el perfil en la Realtime Database. El rol seleccionado (cuidador o adulto
+ * mayor) se persiste en el campo esPrincipal.
+ */
 public class RegistroActivity extends AppCompatActivity {
 
     private EditText etNombre, etCorreo, etPassword, etConfirmPassword, etTelefono;
@@ -51,6 +58,7 @@ public class RegistroActivity extends AppCompatActivity {
             return insets;
         });
     }
+    /** Valida los campos, crea la cuenta en Auth y guarda el perfil en la base de datos. */
     private void registrarUsuario() {
         String nombre = etNombre.getText().toString().trim();
         String correo = etCorreo.getText().toString().trim();
@@ -78,18 +86,17 @@ public class RegistroActivity extends AppCompatActivity {
         mAuth.createUserWithEmailAndPassword(correo, pass)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // 3. Guardar los datos adicionales en la base de datos
+                        // Guarda el perfil del usuario en la Realtime Database
                         String uid = mAuth.getCurrentUser().getUid();
                         DatabaseReference mDatabase = FirebaseDatabase.getInstance().getReference();
 
-                        // AQUÍ ESTÁ EL CAMBIO: Agregamos 'uid' como el primer parámetro
                         Usuario nuevoUsuario = new Usuario(uid, nombre, correo, telefono, esPrincipal, "");
 
                         mDatabase.child("Usuarios").child(uid).setValue(nuevoUsuario)
                                 .addOnCompleteListener(dbTask -> {
                                     if (dbTask.isSuccessful()) {
                                         Toast.makeText(RegistroActivity.this, "Usuario registrado con éxito", Toast.LENGTH_SHORT).show();
-                                        finish(); // Regresa al Login
+                                        finish(); // regresa al login
                                     } else {
                                         Toast.makeText(RegistroActivity.this, "Error al guardar datos", Toast.LENGTH_SHORT).show();
                                     }

@@ -36,11 +36,19 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+/**
+ * Pantalla principal del cuidador.
+ *
+ * Centraliza el acceso a las funciones de monitoreo (información del abuelo,
+ * medicamentos, ubicación, notificaciones, usuarios y configuración) e inicia el
+ * servicio de vigilancia de alertas. Refleja en tiempo real el estado del
+ * vínculo con el adulto mayor y gestiona el banner de "sin conexión".
+ */
 public class MainFamiliarActivity extends AppCompatActivity {
     private LinearLayout btnMonitoreo, btnMedicamentos, btnUbicacion, btn_notificaciones, btn_usuarios,
     btn_configuracion;
 
-    //Variables para verificar conexión
+    // Estado de conectividad
     private TextView tvSinConexion;
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
@@ -72,11 +80,11 @@ public class MainFamiliarActivity extends AppCompatActivity {
             if (task.isSuccessful() && task.getResult().getValue() != null) {
                 String nombreCompleto = task.getResult().getValue(String.class);
 
-                // Lógica para obtener el primer nombre
+                // Muestra solo el primer nombre en el saludo
                 String primerNombre = "";
                 if (nombreCompleto != null && !nombreCompleto.isEmpty()) {
                     String[] partes = nombreCompleto.split(" ");
-                    primerNombre = partes[0]; // Tomamos la primera posición
+                    primerNombre = partes[0];
                 }
 
                 tvNombre.setText("Bienvenido,\n" + primerNombre);
@@ -84,24 +92,21 @@ public class MainFamiliarActivity extends AppCompatActivity {
         });
 
 
-        //Verificar conexión
+        // Conectividad: estado inicial y monitoreo en tiempo real
         tvSinConexion = findViewById(R.id.tv_sin_conexion);
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        //Verificar el estado inicial al abrir la app
         verificarConexionInicial();
 
-        //Crear el oyente que reacciona en tiempo real
         networkCallback = new ConnectivityManager.NetworkCallback() {
             @Override
             public void onAvailable(@NonNull Network network) {
-                // Hay internet -> Ocultar banner
                 runOnUiThread(() -> tvSinConexion.setVisibility(View.GONE));
             }
 
             @Override
             public void onLost(@NonNull Network network) {
-                // Verificar si todavía hay otra red activa antes de mostrar el banner
+                // Solo muestra el banner si no queda otra red activa (evita falsos avisos al cambiar de red)
                 Network redActiva = connectivityManager.getActiveNetwork();
                 NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(redActiva);
                 boolean aunConectado = caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
@@ -111,14 +116,13 @@ public class MainFamiliarActivity extends AppCompatActivity {
             }
         };
 
-        //Registrar el oyente
         NetworkRequest request = new NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 .build();
         connectivityManager.registerNetworkCallback(request, networkCallback);
 
 
-        //Inicializar botones de la pantalla
+        // Botones de navegación de la pantalla
         btnMonitoreo = findViewById(R.id.btn_monitoreo);
         btn_agregar_abuelo = findViewById(R.id.btn_agregar_abuelo);
         btnMedicamentos = findViewById(R.id.btn_medicamentos);
@@ -129,7 +133,7 @@ public class MainFamiliarActivity extends AppCompatActivity {
         btn_cerrar_sesion = findViewById(R.id.btn_cerrar_sesion);
 
 
-        if (btnMonitoreo != null) { // Buena práctica para evitar cierres
+        if (btnMonitoreo != null) {
             btnMonitoreo.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -152,9 +156,9 @@ public class MainFamiliarActivity extends AppCompatActivity {
                    .setTitle("Cerrar Sesión")
                    .setMessage("¿Estás seguro de que deseas salir de tu cuenta?")
                    .setPositiveButton("Sí, salir", (dialog, which) -> {
-                       FirebaseAuth.getInstance().signOut(); // Borra el token del celular
+                       FirebaseAuth.getInstance().signOut(); // cierra la sesión de Firebase
                        Intent intent = new Intent(this, LoginActivity.class);
-                       // Borramos el historial de pantallas para que no pueda volver atrás
+                       // Limpia la pila de actividades para impedir volver atrás
                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                        startActivity(intent);
                        finish();
@@ -204,25 +208,25 @@ public class MainFamiliarActivity extends AppCompatActivity {
         });
 
 
-        //Tarjeta de Vinculacion
+        // Tarjeta de estado del vínculo con el adulto mayor
         cardEstadoConexion = findViewById(R.id.card_estado_conexion);
         tvTituloConexion = findViewById(R.id.tv_titulo_conexion);
         tvSubtituloConexion = findViewById(R.id.tv_subtitulo_conexion);
         ivIconoVinculo = findViewById(R.id.iv_icono_vinculo);
         viewIndicadorLed = findViewById(R.id.view_indicador_led);
 
-        //Verificar si hay vinculo
+        // Observa el vínculo en tiempo real para alternar entre la tarjeta y el botón de agregar
         mDatabase.child("Vinculos").child(uidCuidador).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot){
                 if(snapshot.exists()){
-                    // Si hay vínculo, obtenemos el ID del abuelo y actualizamos
+                    // Hay vínculo: muestra la tarjeta con los datos del abuelo
                     String idAbuelo = snapshot.child("id_adulto_vinculado").getValue(String.class);
                     actualizarInterfazVinculo(idAbuelo);
                     cardEstadoConexion.setVisibility(View.VISIBLE);
                     btn_agregar_abuelo.setVisibility(View.GONE);
                 } else{
-                    // Si no hay vínculo, mostramos el botón de agregar
+                    // No hay vínculo: muestra el botón para agregar un adulto mayor
                     btn_agregar_abuelo.setVisibility(View.VISIBLE);
                 }
             }
@@ -248,6 +252,7 @@ public class MainFamiliarActivity extends AppCompatActivity {
         });
     }
 
+    /** Solicita el permiso de notificaciones en Android 13+ (Tiramisu). */
     private void solicitarPermisoNotificaciones() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -259,11 +264,11 @@ public class MainFamiliarActivity extends AppCompatActivity {
         }
     }
 
-    //Metodo para verificar si hay conexión
+    /** Muestra el banner de "sin conexión" si al abrir la app no hay internet. */
     private void verificarConexionInicial() {
         if(connectivityManager != null){
             Network activeNetwork = connectivityManager.getActiveNetwork();
-            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork); //Verifica si hay internet
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork);
             boolean isConnected = capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
 
             if(!isConnected){
@@ -274,12 +279,13 @@ public class MainFamiliarActivity extends AppCompatActivity {
 
     protected void onDestroy() {
         super.onDestroy();
-        //Destruir el oyente para no saturar la memoria
+        // Libera el callback de red para evitar fugas de memoria
         if(connectivityManager != null && networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
         }
     }
 
+    /** Rellena la tarjeta de vínculo con el nombre del adulto mayor y el estado activo. */
     private void actualizarInterfazVinculo(String uidAbuelo) {
         mDatabase.child("Usuarios").child(uidAbuelo).child("nombre").get().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult().exists()) {
@@ -288,7 +294,7 @@ public class MainFamiliarActivity extends AppCompatActivity {
                 tvTituloConexion.setText("Cuidando a: " + nombreAbuelo);
                 tvSubtituloConexion.setText("Conexión activa");
 
-                // Cambiamos colores a "Activo"
+                // Colorea el icono y el LED para indicar conexión activa
                 ivIconoVinculo.setImageTintList(ColorStateList.valueOf(Color.parseColor("#80C7DE")));
                 viewIndicadorLed.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
             }

@@ -10,6 +10,13 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
+/**
+ * Adaptador de RecyclerView que muestra el historial de notificaciones.
+ *
+ * Resalta visualmente cada entrada según su tipo: las emergencias se pintan con
+ * fondo rojo claro y texto rojo; los avisos informativos, con fondo blanco y
+ * texto azul.
+ */
 public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapter.ViewHolder> {
 
     private List<Notificacion> listaNotificaciones;
@@ -33,7 +40,7 @@ public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapte
         holder.tvFecha.setText(noti.getFecha());
         holder.tvHora.setText(noti.getHora());
 
-        // Colores según el tipo (Emergencia = fondo rojo clarito, Info = fondo blanco)
+        // Estilo según el tipo: emergencia (rojo) o aviso informativo (azul)
         if (noti.isEsEmergencia()) {
             holder.llContenedor.setBackgroundColor(Color.parseColor("#FFF0F0"));
             holder.tvMensaje.setTextColor(Color.parseColor("#D32F2F"));
@@ -48,7 +55,7 @@ public class NotificacionAdapter extends RecyclerView.Adapter<NotificacionAdapte
         return listaNotificaciones.size();
     }
 
-    // Actualiza la lista de notificaciones
+    /** Reemplaza la lista de notificaciones y refresca la vista. */
     public void actualizarLista(List<Notificacion> nuevaLista) {
         this.listaNotificaciones = nuevaLista;
         notifyDataSetChanged();

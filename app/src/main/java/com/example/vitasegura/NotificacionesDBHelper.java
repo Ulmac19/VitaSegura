@@ -9,6 +9,14 @@ import android.database.sqlite.SQLiteOpenHelper;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Helper de SQLite que persiste el historial de notificaciones del cuidador.
+ *
+ * Implementa el patrón singleton (getInstance) y mantiene la conexión abierta
+ * durante el ciclo de vida de la aplicación; por ello no se llama a db.close()
+ * dentro de sus métodos. Todas las alertas se guardan sin importar su antigüedad;
+ * limpiarHistorialAntiguo() purga los registros con más de 30 días.
+ */
 public class NotificacionesDBHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "VitaSeguraNotis.db";
     private static final int DATABASE_VERSION = 1;
@@ -34,17 +42,17 @@ public class NotificacionesDBHelper extends SQLiteOpenHelper {
                 "hora TEXT, " +
                 "fecha TEXT, " +
                 "esEmergencia INTEGER, " +
-                "timestamp_ms INTEGER)"; // Usamos milisegundos para calcular los 30 días
+                "timestamp_ms INTEGER)"; // timestamp en milisegundos para calcular el límite de 30 días
         db.execSQL(createTable);
     }
 
-    // Actualiza la versión de la base de datos
+    /** Recrea la tabla al cambiar la versión del esquema. */
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_NOTIFICACIONES);
         onCreate(db);
     }
 
-    // Metodo para guardar una nueva notificación
+    /** Inserta una notificación en el historial. */
     public void insertarNotificacion(String mensaje, String hora, String fecha, boolean esEmergencia, long timestamp) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -56,15 +64,15 @@ public class NotificacionesDBHelper extends SQLiteOpenHelper {
         db.insert(TABLE_NOTIFICACIONES, null, values);
     }
 
-    // Metodo para obtener las notificaciones (filtrando por tipo)
+    /** Devuelve las notificaciones del historial filtradas por tipo (emergencias o avisos). */
     public List<Notificacion> obtenerNotificaciones(boolean emergencias) {
         List<Notificacion> lista = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
-        // significa true (emergencia), 0 significa false (información)
+        // 1 = emergencia, 0 = información
         int tipo = emergencias ? 1 : 0;
 
-        // Ordenamos de la más reciente a la más antigua
+        // Ordenadas de la más reciente a la más antigua
         Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_NOTIFICACIONES + " WHERE esEmergencia = ? ORDER BY timestamp_ms DESC", new String[]{String.valueOf(tipo)});
 
         if (cursor.moveToFirst()) {
@@ -80,10 +88,10 @@ public class NotificacionesDBHelper extends SQLiteOpenHelper {
         return lista;
     }
 
-    //Borra lo que tenga más de 30 días
+    /** Elimina las notificaciones con más de 30 días de antigüedad. */
     public void limpiarHistorialAntiguo() {
         SQLiteDatabase db = this.getWritableDatabase();
-        // 30 días en milisegundos: 30L * 24 horas * 60 minutos * 60 segundos * 1000 milisegundos
+        // 30 días expresados en milisegundos
         long limiteTiempo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000);
 
         db.delete(TABLE_NOTIFICACIONES, "timestamp_ms < ?", new String[]{String.valueOf(limiteTiempo)});

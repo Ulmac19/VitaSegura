@@ -16,6 +16,13 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+/**
+ * Segundo paso del flujo de recuperación de contraseña.
+ *
+ * Verifica el código de 6 dígitos contra el nodo CodigosRecuperacion de
+ * Firebase, comprobando que coincida y que no haya expirado. Si es válido,
+ * avanza a CambiarPassActivity.
+ */
 public class IngresarCodigoActivity extends AppCompatActivity {
 
     private EditText etCodigo;
@@ -33,7 +40,7 @@ public class IngresarCodigoActivity extends AppCompatActivity {
         btnVerificar = findViewById(R.id.btn_verificar_codigo);
         mDatabase = FirebaseDatabase.getInstance().getReference();
 
-        // Recibimos el correo de la pantalla anterior
+        // Correo recibido desde la pantalla anterior
         correoUsuario = getIntent().getStringExtra("correoUsuario");
 
         btnVerificar.setOnClickListener(v -> verificarCodigo());
@@ -45,6 +52,7 @@ public class IngresarCodigoActivity extends AppCompatActivity {
         });
     }
 
+    /** Comprueba que el código ingresado coincida y siga vigente antes de continuar. */
     private void verificarCodigo() {
         String codigoIngresado = etCodigo.getText().toString().trim();
 
@@ -53,7 +61,7 @@ public class IngresarCodigoActivity extends AppCompatActivity {
             return;
         }
 
-        // En Node.js guardamos el correo cambiando los puntos por guiones bajos
+        // El backend usa el correo como clave reemplazando los puntos por guiones bajos
         String emailKey = correoUsuario.replace(".", "_");
 
         mDatabase.child("CodigosRecuperacion").child(emailKey).get()
@@ -62,18 +70,18 @@ public class IngresarCodigoActivity extends AppCompatActivity {
                         String codigoGuardado = snapshot.child("codigo").getValue(String.class);
                         Long expiracion = snapshot.child("expiresAt").getValue(Long.class);
 
-                        // 1. Validar que no esté expirado
+                        // 1. Verifica que el código no haya expirado
                         if (expiracion != null && System.currentTimeMillis() > expiracion) {
                             Toast.makeText(this, "El código ha expirado. Solicita uno nuevo.", Toast.LENGTH_LONG).show();
                         }
-                        // 2. Validar que sea correcto
+                        // 2. Verifica que el código coincida
                         else if (codigoGuardado != null && codigoGuardado.equals(codigoIngresado)) {
                             Toast.makeText(this, "Código verificado correctamente", Toast.LENGTH_SHORT).show();
 
-                            // Pasamos a la pantalla de Cambiar Contraseña
+                            // Avanza a la pantalla de cambio de contraseña
                             Intent intent = new Intent(this, CambiarPassActivity.class);
                             intent.putExtra("correoUsuario", correoUsuario);
-                            intent.putExtra("flujoRecuperacion", true); // Bandera para saber de dónde venimos
+                            intent.putExtra("flujoRecuperacion", true); // indica que proviene del flujo de recuperación
                             startActivity(intent);
                             finish();
                         } else {

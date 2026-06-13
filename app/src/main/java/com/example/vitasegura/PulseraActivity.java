@@ -26,6 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Pantalla de emparejamiento de la pulsera de salud por Bluetooth Low Energy.
+ *
+ * Solicita los permisos de BLE/ubicación, escanea filtrando por las MAC
+ * conocidas de las pulseras, permite elegir una y se conecta a su servicio
+ * Nordic UART. Una vez conectada, habilita las notificaciones de la
+ * característica TX y reenvía cada trama recibida por broadcast
+ * ("DATA_PULSERA_REAL") para que los servicios y pantallas la procesen.
+ */
 public class PulseraActivity extends AppCompatActivity {
 
     private BluetoothAdapter bluetoothAdapter;
@@ -39,14 +48,14 @@ public class PulseraActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private ImageView ivPulseraLogo;
 
-    // --- CONFIGURACIÓN DE TUS MAC ---
+    // --- Direcciones MAC de las pulseras conocidas ---
     private final String MAC_PULSERA_1 = "1C:DB:D4:C6:4F:5A";
     private final String MAC_PULSERA_2 = "88:56:A6:5C:2E:E6";
     private final String MAC_PULSERA_3 = "1C:DB:D4:C6:75:3E";
 
     private static final int PERM_BLE = 101;
 
-    // Listas para manejar los múltiples hallazgos
+    // Dispositivos detectados durante el escaneo y sus etiquetas para el diálogo
     private List<BluetoothDevice> dispositivosEncontrados = new ArrayList<>();
     private List<String> nombresParaMostrar = new ArrayList<>();
 
@@ -82,6 +91,7 @@ public class PulseraActivity extends AppCompatActivity {
         findViewById(R.id.iv_back_pulsera).setOnClickListener(v -> finish());
     }
 
+    /** Comprueba los permisos de BLE/ubicación y los solicita o inicia el escaneo. */
     private void verificarYSolicitarPermisosBLE() {
         List<String> permisosNecesarios = new ArrayList<>();
 
@@ -121,8 +131,9 @@ public class PulseraActivity extends AppCompatActivity {
         }
     }
 
+    /** Escanea dispositivos BLE durante 4 segundos filtrando por las MAC conocidas. */
     private void iniciarEscaneo() {
-        // Reintentar inicializar el scanner si se acaban de conceder permisos
+        // Reintenta inicializar el scanner si los permisos se acaban de conceder
         if (bleScanner == null && bluetoothAdapter != null && bluetoothAdapter.isEnabled()) {
             bleScanner = bluetoothAdapter.getBluetoothLeScanner();
         }
@@ -139,7 +150,7 @@ public class PulseraActivity extends AppCompatActivity {
 
         try {
             bleScanner.startScan(scanCallback);
-            // Esperamos 4 segundos para captar ambos dispositivos antes de mostrar la lista
+            // Espera 4 segundos para captar todos los dispositivos antes de mostrar la lista
             new Handler().postDelayed(this::detenerEscaneoYMostrarOpciones, 4000);
         } catch (SecurityException e) { e.printStackTrace(); }
     }
@@ -174,7 +185,7 @@ public class PulseraActivity extends AppCompatActivity {
             if (dispositivosEncontrados.isEmpty()) {
                 Toast.makeText(this, "No se encontraron tus pulseras", Toast.LENGTH_SHORT).show();
             } else {
-                // Mostramos el diálogo para elegir entre las encontradas
+                // Permite elegir entre las pulseras detectadas
                 mostrarDialogoSeleccion();
             }
         });
@@ -186,7 +197,7 @@ public class PulseraActivity extends AppCompatActivity {
 
         String[] items = nombresParaMostrar.toArray(new String[0]);
         builder.setItems(items, (dialog, which) -> {
-            // Al elegir una, llenamos el CardView con sus datos
+            // Al elegir una, muestra sus datos en la tarjeta
             targetDevice = dispositivosEncontrados.get(which);
             @SuppressLint("MissingPermission") String name = targetDevice.getName();
             tvNombre.setText(name != null ? name : "Pulsera Vita");
@@ -225,7 +236,7 @@ public class PulseraActivity extends AppCompatActivity {
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 BluetoothServiceManager.getInstance().setGatt(null);
 
-                //Avisar al servicio de notificación de que se perdió la conexión
+                // Notifica al servicio que la pulsera perdió la conexión
                 Intent intentDesc = new Intent("PULSERA_DESCONECTADA");
                 sendBroadcast(intentDesc);
 

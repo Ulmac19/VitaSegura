@@ -5,7 +5,7 @@ plugins {
     id("com.google.gms.google-services") // Requerido para Firebase
 }
 
-// Lógica para leer la llave de Google Maps desde local.properties
+// Lee la llave de Google Maps desde local.properties (fuera del control de versiones)
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
@@ -15,7 +15,6 @@ val mapsKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
 
 android {
     namespace = "com.example.vitasegura"
-    // Actualizado a 36 como exigen tus librerías actuales
     compileSdk = 36
 
     defaultConfig {
@@ -27,7 +26,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Esto soluciona el error "requires a placeholder substitution"
+        // Inyecta la llave de Maps como placeholder del AndroidManifest
         manifestPlaceholders["MAPS_API_KEY"] = mapsKey
     }
 

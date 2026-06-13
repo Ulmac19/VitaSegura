@@ -1,5 +1,13 @@
 package com.example.vitasegura;
 
+/**
+ * Modelo de datos que representa un medicamento y su recordatorio asociado.
+ *
+ * Se almacena bajo Usuarios/[uidAbuelo]/Medicamentos/[id] en Firebase. El campo
+ * frecuencia admite los valores "Cada 8 horas", "Cada 12 horas", "Cada 24 horas"
+ * o "Solo si hay dolor"; en este último caso hora queda vacío porque la toma es
+ * libre.
+ */
 public class Medicamento {
     private String id;
     private String nombre;

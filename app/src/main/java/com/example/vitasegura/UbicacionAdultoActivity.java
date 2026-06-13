@@ -40,6 +40,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Pantalla donde el cuidador visualiza la ubicación del adulto mayor en un mapa.
+ *
+ * Consulta periódicamente (intervalo configurable) la última posición publicada
+ * en Firebase, actualiza el marcador en Google Maps y guarda un historial local
+ * en SQLite. Cada entrada del historial es pulsable para recentrar el mapa.
+ */
 public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
@@ -83,7 +90,7 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
         // Configurar RecyclerView
         rvHistorial.setLayoutManager(new LinearLayoutManager(this));
         adapter = new HistorialUbicacionAdapter(listaUbicaciones, ubicacion -> {
-            // Animación al hacer clic en el historial
+            // Al pulsar una entrada del historial, centra el mapa en esa posición
             if (mMap != null) {
                 LatLng pos = new LatLng(ubicacion.getLatitud(), ubicacion.getLongitud());
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 16f));
@@ -114,6 +121,7 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
         obtenerIdYArrancarRastreo();
     }
 
+    /** Resuelve el adulto vinculado, fija el título y arranca el rastreo periódico. */
     private void obtenerIdYArrancarRastreo() {
         SharedPreferences prefs = getSharedPreferences("VitaConfig", MODE_PRIVATE);
         intervaloMilisegundos = prefs.getInt("frecuencia_ubicacion", 5) * 60 * 1000;
@@ -127,14 +135,12 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
                             if (t.isSuccessful() && t.getResult().exists() && tvTitulo != null) {
                                 String nombreCompleto = t.getResult().getValue(String.class);
                                 String primerNombre = "";
-
-                                //Obtener solo el primer nombre
                                 if (nombreCompleto != null && !nombreCompleto.isEmpty()) {
                                     String[] partes = nombreCompleto.split(" ");
                                     primerNombre = partes[0];
                                 }
 
-                                // Ponemos solo el primer nombre en el título
+                                // Muestra solo el primer nombre en el título
                                 tvTitulo.setText("Ubicación de\n" + primerNombre);
                             }
                         });
@@ -144,6 +150,7 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
                 });
     }
 
+    /** Programa la consulta periódica de la ubicación del adulto en Firebase. */
     private void iniciarRastreoPeriodico(String uidAbuelo) {
         runnableUbicacion = new Runnable() {
             @Override
@@ -166,6 +173,7 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
         handlerUbicacion.post(runnableUbicacion);
     }
 
+    /** Crea o reposiciona el marcador del adulto y mueve la cámara hacia él. */
     private void actualizarMapa(double lat, double lon) {
         LatLng posicionActual = new LatLng(lat, lon);
 
@@ -182,13 +190,13 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
         }
     }
 
-    //Convierte coordenadas a una dirección en texto
+    /** Convierte unas coordenadas en una dirección legible mediante Geocoder. */
     private String obtenerDireccion(double lat, double lon) {
         try {
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             List<Address> direcciones = geocoder.getFromLocation(lat, lon, 1);
             if (direcciones != null && !direcciones.isEmpty()) {
-                return direcciones.get(0).getAddressLine(0); // Ej: Av. Vallarta #123
+                return direcciones.get(0).getAddressLine(0); // ej. "Av. Vallarta #123"
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -196,15 +204,15 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
         return "Ubicación desconocida (Lat: " + String.format(Locale.US, "%.3f", lat) + ")";
     }
 
+    /** Registra la ubicación en el historial local, evitando duplicar la última. */
     private void guardarEnHistorial(double lat, double lon) {
         if (!listaUbicaciones.isEmpty()) {
             Ubicacion ultima = listaUbicaciones.get(0);
-            if (ultima.getLatitud() == lat && ultima.getLongitud() == lon) return; // Evitar repetidos
+            if (ultima.getLatitud() == lat && ultima.getLongitud() == lon) return; // evita registros repetidos
         }
 
         String direccionReal = obtenerDireccion(lat, lon);
 
-        // Formato para mostrar "Hoy - 14:30 PM"
         String fechaHora = new SimpleDateFormat("dd MMM - hh:mm a", Locale.getDefault()).format(new Date());
 
         dbHelper.insertarUbicacion(direccionReal, fechaHora, lat, lon);
@@ -225,10 +233,13 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
         }
     }
 
-    //--- BASE DE DATOS LOCAL PARA UBICACIONES --
+    /**
+     * Helper de SQLite que conserva el historial local de ubicaciones (máximo 20
+     * registros, FIFO por id).
+     */
     private static class UbicacionDBHelper extends SQLiteOpenHelper {
         private static final String DB_NAME = "VitaUbicaciones.db";
-        // Subimos a versión 2 para actualizar la tabla e incluir 'direccion'
+        // Versión 2: la tabla incluye la columna 'direccion'
         private static final int DB_VERSION = 2;
 
         public UbicacionDBHelper(Context context) { super(context, DB_NAME, null, DB_VERSION); }
@@ -253,7 +264,7 @@ public class UbicacionAdultoActivity extends AppCompatActivity implements OnMapR
             v.put("lon", lon);
             db.insert("historial", null, v);
 
-            // Mantener solo los últimos 20 registros
+            // Conserva solo los 20 registros más recientes
             db.execSQL("DELETE FROM historial WHERE id NOT IN (SELECT id FROM historial ORDER BY id DESC LIMIT 20)");
         }
 

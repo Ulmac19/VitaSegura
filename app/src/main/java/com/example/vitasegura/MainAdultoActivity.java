@@ -37,9 +37,18 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Pantalla principal del adulto mayor.
+ *
+ * Da acceso a las funciones de autocuidado (salud, medicamentos, emergencia,
+ * información personal y vinculación de la pulsera) e inicia los servicios en
+ * primer plano de monitoreo y notificaciones. Además gestiona el banner de
+ * "sin conexión" y la sincronización de las alertas encoladas sin internet, y
+ * permite generar el código temporal para vincularse con un cuidador.
+ */
 public class MainAdultoActivity extends AppCompatActivity {
 
-    //Variables para verificar conexión
+    // Estado de conectividad
     private TextView tvSinConexion;
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
@@ -66,16 +75,15 @@ public class MainAdultoActivity extends AppCompatActivity {
 
         tvNombre = findViewById(R.id.tv_bienvenida_adulto);
 
-        // Recuperar nombre y extraer solo el primer nombre
+        // Carga el nombre del usuario y muestra solo el primer nombre en el saludo
         mDatabase.child("Usuarios").child(uidAbuelo).child("nombre").get().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult().getValue() != null) {
                 String nombreCompleto = task.getResult().getValue(String.class);
 
-                // Lógica para obtener el primer nombre
                 String primerNombre = "";
                 if (nombreCompleto != null && !nombreCompleto.isEmpty()) {
                     String[] partes = nombreCompleto.split(" ");
-                    primerNombre = partes[0]; // Tomamos la primera posición
+                    primerNombre = partes[0];
                 }
 
                 tvNombre.setText("Bienvenido,\n" + primerNombre);
@@ -86,18 +94,16 @@ public class MainAdultoActivity extends AppCompatActivity {
         btnGenerarCodigo = findViewById(R.id.btn_generar_codigo);
         btnGenerarCodigo.setOnClickListener(v -> gestionarCodigoVinculacion());
 
-        //Verificar conexión
+        // Conectividad: estado inicial y monitoreo en tiempo real
         tvSinConexion = findViewById(R.id.tv_sin_conexion);
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        //Verificar el estado inicial al abrir la app
         verificarConexionInicial();
 
-        //Crear el oyente que reacciona en tiempo real
         networkCallback = new ConnectivityManager.NetworkCallback() {
             @Override
             public void onAvailable(@NonNull Network network) {
-                // Hay internet -> Ocultar banner
+                // Al recuperar internet, oculta el banner y sincroniza las alertas pendientes
                 runOnUiThread(() -> {
                     tvSinConexion.setVisibility(View.GONE);
                     sincronizarAlertasPendientes();
@@ -106,7 +112,7 @@ public class MainAdultoActivity extends AppCompatActivity {
 
             @Override
             public void onLost(@NonNull Network network) {
-                // Verificar si todavía hay otra red activa antes de mostrar el banner
+                // Solo muestra el banner si no queda otra red activa (evita falsos avisos al cambiar de red)
                 Network redActiva = connectivityManager.getActiveNetwork();
                 NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(redActiva);
                 boolean aunConectado = caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
@@ -116,13 +122,12 @@ public class MainAdultoActivity extends AppCompatActivity {
             }
         };
 
-        //Registrar el oyente
         NetworkRequest request = new NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 .build();
         connectivityManager.registerNetworkCallback(request, networkCallback);
 
-        //Declarar botones de la pantalla
+        // Botones de navegación de la pantalla
         btnSalud = findViewById(R.id.btn_salud);
         btnMeds = findViewById(R.id.btn_medicamentos);
         btnEmergencia = findViewById(R.id.btn_emergencia);
@@ -177,6 +182,7 @@ public class MainAdultoActivity extends AppCompatActivity {
         });
     }
 
+    /** Solicita el permiso de notificaciones en Android 13+ (Tiramisu). */
     private void solicitarPermisoNotificaciones() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -187,11 +193,11 @@ public class MainAdultoActivity extends AppCompatActivity {
         }
     }
 
-    //Metodo para verificar si hay conexión
+    /** Muestra el banner de "sin conexión" si al abrir la app no hay internet. */
     private void verificarConexionInicial() {
         if(connectivityManager != null){
             Network activeNetwork = connectivityManager.getActiveNetwork();
-            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork); //Verifica si hay internet
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(activeNetwork);
             boolean isConnected = capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
 
             if(!isConnected){
@@ -202,13 +208,16 @@ public class MainAdultoActivity extends AppCompatActivity {
 
     protected void onDestroy() {
         super.onDestroy();
-        //Destruir el oyente para no saturar la memoria
+        // Libera el callback de red para evitar fugas de memoria
         if(connectivityManager != null && networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
         }
     }
 
-    //Metodo para sincronizar alertas guardadas en SQLite
+    /**
+     * Sube a Firebase todas las alertas encoladas en SQLite y elimina cada una
+     * solo tras confirmar la escritura.
+     */
     private void sincronizarAlertasPendientes(){
         if(FirebaseAuth.getInstance().getCurrentUser() == null) return;
         String miUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -218,7 +227,7 @@ public class MainAdultoActivity extends AppCompatActivity {
         AlertasOfflineDBHelper dbHelper = AlertasOfflineDBHelper.getInstance(this);
         android.database.sqlite.SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        //Leer todas las alertas pendientes
+        // Recorre todas las alertas encoladas
         android.database.Cursor c = db.rawQuery("SELECT * FROM " + AlertasOfflineDBHelper.TABLE_NAME, null);
 
         while(c.moveToNext()){
@@ -232,9 +241,8 @@ public class MainAdultoActivity extends AppCompatActivity {
             alerta.put("mensaje", mensaje);
             alerta.put("timestamp", timestamp);
 
-            //Subir a firebase
+            // Sube la alerta y, solo si tiene éxito, la elimina de la cola local
             ref.push().setValue(alerta).addOnSuccessListener(aVoid -> {
-                //EXITO: Si se sube, eliminar de SQLite
                 dbHelper.eliminarAlertas(id);
             });
         }
@@ -242,6 +250,10 @@ public class MainAdultoActivity extends AppCompatActivity {
         db.close();
     }
 
+    /**
+     * Genera un código temporal de 6 caracteres (15 min de vigencia) y lo guarda
+     * en Codigos_Temporales para que un cuidador pueda vincularse con este adulto.
+     */
     private void gestionarCodigoVinculacion() {
         String caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         StringBuilder codigo = new StringBuilder();
@@ -251,7 +263,7 @@ public class MainAdultoActivity extends AppCompatActivity {
         }
         String codigoFinal = codigo.toString();
 
-        // Generar código temporal
+        // Vigencia del código: 15 minutos
         long tiempoExpiracion = System.currentTimeMillis() + (15*60*1000);
 
         Map<String, Object> datosCodigo = new HashMap<>();
@@ -267,6 +279,7 @@ public class MainAdultoActivity extends AppCompatActivity {
                 });
     }
 
+    /** Muestra en un diálogo el código de vinculación generado, en formato grande. */
     private void mostrarDialogoCodigo(String codigo) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Código para tu familiar");

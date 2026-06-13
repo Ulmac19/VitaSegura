@@ -10,6 +10,14 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
 
+/**
+ * Marcador personalizado de MPAndroidChart que se muestra al seleccionar un
+ * punto de la gráfica de signos vitales en MonitoreoSaludActivity.
+ *
+ * Muestra el valor con su unidad (p. ej. bpm o %) y permite ajustar la
+ * transparencia del marcador mediante setCustomAlpha para animaciones de
+ * aparición/desaparición.
+ */
 public class SaludMarkerView extends MarkerView {
     private final TextView tvContent;
     private final RelativeLayout rootLayout;
@@ -23,10 +31,10 @@ public class SaludMarkerView extends MarkerView {
         rootLayout = findViewById(R.id.marker_root);
         this.unidad = unidad;
 
-        // Creamos el fondo gris oscuro manualmente para controlar su transparencia
+        // Fondo creado por código para poder controlar su transparencia dinámicamente
         bgDrawable = new GradientDrawable();
         bgDrawable.setColor(Color.DKGRAY);
-        bgDrawable.setCornerRadius(8f); // Bordes redondeados para que se vea mejor
+        bgDrawable.setCornerRadius(8f); // Esquinas redondeadas
         if (rootLayout != null) {
             rootLayout.setBackground(bgDrawable);
         }

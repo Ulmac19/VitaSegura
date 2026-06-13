@@ -23,6 +23,15 @@ import com.google.firebase.functions.FirebaseFunctions;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Pantalla de cambio de contraseña, reutilizada en dos flujos:
+ *
+ * - Recuperación (flujoRecuperacion = true): el usuario olvidó su contraseña, por
+ *   lo que se omite la contraseña actual y el cambio se delega en la Cloud
+ *   Function cambiarPasswordOlvidada.
+ * - Cambio normal: el usuario autenticado se reautentica con su contraseña actual
+ *   antes de actualizarla.
+ */
 public class CambiarPassActivity extends AppCompatActivity {
 
     private EditText etPassActual, etNuevaPass, etConfirmarPass;
@@ -46,13 +55,13 @@ public class CambiarPassActivity extends AppCompatActivity {
 
         mFunctions = FirebaseFunctions.getInstance();
 
-        // Verificamos de dónde viene el usuario
+        // Determina el flujo de origen (recuperación o cambio normal)
         if (getIntent() != null) {
             vieneDeRecuperacion = getIntent().getBooleanExtra("flujoRecuperacion", false);
             correoRecuperacion = getIntent().getStringExtra("correoUsuario");
         }
 
-        // Si viene de recuperar contraseña, no le pedimos la actual porque no se la sabe
+        // En el flujo de recuperación no se solicita la contraseña actual
         if (vieneDeRecuperacion) {
             etPassActual.setVisibility(View.GONE);
         }
@@ -75,6 +84,7 @@ public class CambiarPassActivity extends AppCompatActivity {
         });
     }
 
+    /** Cambia la contraseña a través de la Cloud Function (flujo de recuperación). */
     private void cambiarPassDesdeNube() {
         String nuevaPass = etNuevaPass.getText().toString().trim();
         String confirmarPass = etConfirmarPass.getText().toString().trim();
@@ -97,7 +107,7 @@ public class CambiarPassActivity extends AppCompatActivity {
         btnConfirmar.setEnabled(false);
         btnConfirmar.setText("Cambiando...");
 
-        // Preparamos los datos para Node.js
+        // Datos enviados a la Cloud Function
         Map<String, Object> data = new HashMap<>();
         data.put("email", correoRecuperacion);
         data.put("newPassword", nuevaPass);
@@ -119,6 +129,7 @@ public class CambiarPassActivity extends AppCompatActivity {
                 });
     }
 
+    /** Reautentica al usuario con su contraseña actual y luego la actualiza. */
     private void reautenticarYCambiarPassword() {
         String passActual = etPassActual.getText().toString().trim();
         String nuevaPass = etNuevaPass.getText().toString().trim();
@@ -142,13 +153,13 @@ public class CambiarPassActivity extends AppCompatActivity {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         if (user != null && user.getEmail() != null) {
-            // 1. Creamos la credencial con el correo del usuario y su contraseña actual
+            // 1. Construye la credencial con el correo y la contraseña actual
             AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), passActual);
 
-            // 2. Re-autenticamos al usuario
+            // 2. Reautentica al usuario (requisito de Firebase para operaciones sensibles)
             user.reauthenticate(credential).addOnCompleteListener(authTask -> {
                 if (authTask.isSuccessful()) {
-                    // 3. Si la re-autenticación es exitosa, ahora sí cambiamos la contraseña
+                    // 3. Una vez reautenticado, actualiza la contraseña
                     user.updatePassword(nuevaPass).addOnCompleteListener(updateTask -> {
                         if (updateTask.isSuccessful()) {
                             Toast.makeText(CambiarPassActivity.this, "Contraseña actualizada con éxito", Toast.LENGTH_SHORT).show();
@@ -162,7 +173,7 @@ public class CambiarPassActivity extends AppCompatActivity {
                         }
                     });
                 } else {
-                    // Si falla aquí, es porque escribieron mal su contraseña actual
+                    // El fallo en la reautenticación indica que la contraseña actual es incorrecta
                     Toast.makeText(CambiarPassActivity.this, "La contraseña actual es incorrecta", Toast.LENGTH_SHORT).show();
                 }
             });

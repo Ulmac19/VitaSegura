@@ -8,12 +8,19 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
+/**
+ * Adaptador de RecyclerView que muestra el historial de ubicaciones del adulto
+ * mayor.
+ *
+ * Cada elemento es pulsable: al hacer clic notifica al listener para que
+ * UbicacionAdultoActivity centre el mapa en esa ubicación.
+ */
 public class HistorialUbicacionAdapter extends RecyclerView.Adapter<HistorialUbicacionAdapter.ViewHolder> {
 
     private List<Ubicacion> historial;
     private OnItemClickListener listener;
 
-    // Interfaz para clics
+    /** Callback para notificar la selección de una ubicación del historial. */
     public interface OnItemClickListener {
         void onItemClick(Ubicacion ubicacion);
     }

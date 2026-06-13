@@ -35,13 +35,21 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Pantalla de gestión de usuarios para el cuidador, presentada como un carrusel.
+ *
+ * Muestra el perfil propio y los de los cuidadores de apoyo que comparten el
+ * mismo adulto mayor. Permite editar los datos y la foto de perfil propios
+ * (recorte con uCrop y subida a Firebase Storage), agregar cuidadores de apoyo
+ * por correo y desvincular a los existentes.
+ */
 public class UsuariosActivity extends AppCompatActivity {
 
     private TextView tvTitulo, tvNombre, tvCorreo, tvTelefono;
     private Button btnCambiarPass, btnEliminar, btnAnterior, btnSiguiente;
     private ImageView ivAgregar, ivPerfil;
 
-    //Variables para foto de perfil
+    // Foto de perfil (selección y recorte)
     private Uri imagenUri;
     private ActivityResultLauncher<String> galeriaLauncher;
 
@@ -84,7 +92,7 @@ public class UsuariosActivity extends AppCompatActivity {
                 new ActivityResultContracts.GetContent(),
                 uri -> {
                     if (uri != null) {
-                        iniciarRecorte(uri); // En lugar de subirla directo, la mandamos a recortar
+                        iniciarRecorte(uri); // se recorta antes de subir
                     }
                 }
         );
@@ -97,7 +105,7 @@ public class UsuariosActivity extends AppCompatActivity {
                         if (resultUri != null) {
                             imagenUri = resultUri;
                             Glide.with(this).load(imagenUri).circleCrop().into(ivPerfil);
-                            subirFotoAFirebase(); // Sube a la nube
+                            subirFotoAFirebase();
                         }
                     } else if (result.getResultCode() == com.yalantis.ucrop.UCrop.RESULT_ERROR) {
                         Toast.makeText(this, "Error al recortar la imagen", Toast.LENGTH_SHORT).show();
@@ -107,7 +115,7 @@ public class UsuariosActivity extends AppCompatActivity {
 
         ivPerfil.setOnClickListener(v -> {
             if (!listaUsuarios.isEmpty()) {
-                boolean esMiPerfil = listaUsuarios.get(indiceActual).getUid().equals(miUid); //Variable para saber si es mi perfil
+                boolean esMiPerfil = listaUsuarios.get(indiceActual).getUid().equals(miUid);
                 if (esMiPerfil) {
                     galeriaLauncher.launch("image/*");
                 } else {
@@ -165,31 +173,31 @@ public class UsuariosActivity extends AppCompatActivity {
         });
     }
 
-    // --- LÓGICA DE FIREBASE ---
+    // --- Acceso a Firebase ---
 
+    /** Determina el adulto vinculado y carga la red de cuidadores o solo el perfil propio. */
     private void obtenerIdAbueloYCuidadores() {
-        //Saber a qué abuelo estoy cuidando
         mDatabase.child("Vinculos").child(miUid).child("id_adulto_vinculado").get()
                 .addOnSuccessListener(snapshot -> {
                     if (snapshot.exists()) {
-                        //Se tiene un abuelo vinculado: cargamos toda la red
+                        // Hay un adulto vinculado: carga toda la red de cuidadores
                         uidAbueloActual = snapshot.getValue(String.class);
                         cargarRedDeCuidadores(uidAbueloActual);
                     }else{
-                        //No se tiene un abuelo vinculado: solo mi información
+                        // Sin adulto vinculado: solo se muestra el perfil propio
                         cargarSoloMiInformacion();
                     }
                 });
     }
 
+    /** Carga únicamente el perfil del usuario actual. */
     private void cargarSoloMiInformacion() {
         mDatabase.child("Usuarios").child(miUid).get().addOnSuccessListener(userSnap -> {
             if (userSnap.exists()) {
                 listaUsuarios.clear();
                 Usuario u = userSnap.getValue(Usuario.class);
-                // Si el getValue(Usuario.class) te da problemas, usa el mapeo manual que ya tenías:
                 if (u != null) {
-                    u.setUid(miUid); // Aseguramos que tenga el UID
+                    u.setUid(miUid); // garantiza que el objeto conserve su UID
                     listaUsuarios.add(u);
                     indiceActual = 0;
                     actualizarPantalla();
@@ -198,8 +206,9 @@ public class UsuariosActivity extends AppCompatActivity {
         });
     }
 
+    /** Carga el perfil propio y el de todos los cuidadores que comparten el mismo adulto. */
     private void cargarRedDeCuidadores(String idAbuelo) {
-        //Buscar en "Vinculos" a todos los que cuiden a este mismo abuelo
+        // Busca en Vinculos a todos los cuidadores asociados al mismo adulto mayor
         mDatabase.child("Vinculos").orderByChild("id_adulto_vinculado").equalTo(idAbuelo)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
@@ -209,10 +218,10 @@ public class UsuariosActivity extends AppCompatActivity {
 
                         List<String> uidsCuidadores = new ArrayList<>();
                         for (DataSnapshot vinculo : snapshot.getChildren()) {
-                            uidsCuidadores.add(vinculo.getKey()); // Obtenemos el UID de cada cuidador
+                            uidsCuidadores.add(vinculo.getKey()); // UID de cada cuidador
                         }
 
-                        // 3. Descargar la información de cada cuidador encontrado
+                        // Descarga la información de cada cuidador encontrado
                         for (String uid : uidsCuidadores) {
                             mDatabase.child("Usuarios").child(uid).get().addOnSuccessListener(userSnap -> {
                                 if (userSnap.exists()) {
@@ -224,7 +233,7 @@ public class UsuariosActivity extends AppCompatActivity {
 
                                     Usuario u = new Usuario(uid, nombre, correo, telefono,  esPrincipal != null ? esPrincipal : true, fotoPerfil != null ? fotoPerfil : "");
 
-                                    // Me aseguro de que "Mi Información" siempre quede en la posición 0
+                                    // El perfil propio siempre se coloca en la posición 0 del carrusel
                                     if (uid.equals(miUid)) {
                                         listaUsuarios.add(0, u);
                                     } else {
@@ -239,33 +248,32 @@ public class UsuariosActivity extends AppCompatActivity {
                 });
     }
 
-    //Metodo para recortar la foto
+    /** Lanza uCrop para recortar la imagen seleccionada en formato circular 1:1. */
     private void iniciarRecorte(Uri sourceUri) {
-        // Creamos un archivo temporal para guardar el recorte
+        // Archivo temporal de caché donde uCrop deja el recorte
         String destinationFileName = "Recorte_" + System.currentTimeMillis() + ".jpg";
         Uri destinationUri = Uri.fromFile(new File(getCacheDir(), destinationFileName));
 
         com.yalantis.ucrop.UCrop.Options options = new com.yalantis.ucrop.UCrop.Options();
-        options.setCircleDimmedLayer(true); // Hace que el marco de recorte sea un círculo
-        options.setShowCropGrid(false); // Oculta la cuadrícula para que se vea más limpio
+        options.setCircleDimmedLayer(true); // marco de recorte circular
+        options.setShowCropGrid(false);
 
-        // Colores personalizados (usa los colores que tienes en tu XML)
+        // Colores acordes a la paleta de la app
         options.setToolbarColor(androidx.core.content.ContextCompat.getColor(this, R.color.azul_oscuro));
         options.setStatusBarColor(androidx.core.content.ContextCompat.getColor(this, R.color.azul_oscuro));
         options.setToolbarWidgetColor(androidx.core.content.ContextCompat.getColor(this, R.color.blanco));
         options.setToolbarTitle("Encuadrar Foto");
 
-        // Configuramos y lanzamos uCrop
         Intent intent = com.yalantis.ucrop.UCrop.of(sourceUri, destinationUri)
-                .withAspectRatio(1, 1) // Obliga a que el recorte sea un cuadrado perfecto
-                .withMaxResultSize(800, 800) // Buena resolución sin hacer pesado el archivo para Firebase
+                .withAspectRatio(1, 1) // recorte cuadrado
+                .withMaxResultSize(800, 800) // limita la resolución para no sobrecargar Storage
                 .withOptions(options)
                 .getIntent(this);
 
         cropLauncher.launch(intent);
     }
 
-    //Metodo para subir la foto a Firebase Storage
+    /** Sube la foto recortada a Firebase Storage y guarda su URL en el perfil. */
     private void subirFotoAFirebase() {
         if (mAuth.getCurrentUser() == null || imagenUri == null) return;
         String uid = mAuth.getCurrentUser().getUid();
@@ -283,7 +291,7 @@ public class UsuariosActivity extends AppCompatActivity {
                         mDatabase.child("Usuarios").child(uid).child("fotoPerfil").setValue(urlDescarga)
                                 .addOnSuccessListener(aVoid -> {
                                     Toast.makeText(UsuariosActivity.this, "¡Foto actualizada con éxito!", Toast.LENGTH_SHORT).show();
-                                    // Actualizar la foto en la lista, si es mi perfil
+                                    // Refleja la nueva foto en la lista local
                                     listaUsuarios.get(indiceActual).setFotoPerfil(urlDescarga);
                                 });
                     }).addOnFailureListener(e -> {
@@ -295,6 +303,7 @@ public class UsuariosActivity extends AppCompatActivity {
                 });
     }
 
+    /** Diálogo para asociar un cuidador de apoyo a partir de su correo. */
     private void mostrarDialogAgregarCuidador() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Agregar Cuidador de Apoyo");
@@ -318,7 +327,7 @@ public class UsuariosActivity extends AppCompatActivity {
         builder.show();
     }
 
-    //Metodo para lanzar dialog para editar perfil
+    /** Diálogo para editar el nombre y teléfono del perfil propio. */
     private void mostrarDialogEditarPerfil() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Editar Mis Datos");
@@ -327,13 +336,13 @@ public class UsuariosActivity extends AppCompatActivity {
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(60, 40, 60, 10);
 
-        //Campo para el nombre
+        // Campo de nombre
         final EditText etnuevoNombre = new EditText(this);
         etnuevoNombre.setHint("Nombre Completo");
         etnuevoNombre.setText(listaUsuarios.get(indiceActual).getNombre());
         layout.addView(etnuevoNombre);
 
-        //Campo para el telefono
+        // Campo de teléfono
         final EditText etNuevoTelefono = new EditText(this);
         etNuevoTelefono.setHint("Número de teléfono");
         etNuevoTelefono.setInputType(InputType.TYPE_CLASS_PHONE);
@@ -351,13 +360,13 @@ public class UsuariosActivity extends AppCompatActivity {
                 return;
             }
 
-            //Actualizar en Firebase
+            // Persiste los cambios en Firebase
             mDatabase.child("Usuarios").child(miUid).child("nombre").setValue(nuevoNombre);
             mDatabase.child("Usuarios").child(miUid).child("telefono").setValue(nuevoTelefono)
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(this, "¡Datos actualizados con éxito!",Toast.LENGTH_SHORT).show();
 
-                        //Actualizar la lista local y refrescar la pantalla
+                        // Refresca la lista local y la pantalla
                         listaUsuarios.get(indiceActual).setNombre(nuevoNombre);
                         listaUsuarios.get(indiceActual).setTelefono(nuevoTelefono);
                         actualizarPantalla();
@@ -367,6 +376,7 @@ public class UsuariosActivity extends AppCompatActivity {
         builder.show();
     }
 
+    /** Busca un usuario por correo y, si es cuidador, lo vincula al adulto actual. */
     private void buscarYVincularCuidadorPorCorreo(String correo) {
         mDatabase.child("Usuarios").orderByChild("correo").equalTo(correo).get()
                 .addOnSuccessListener(snapshot -> {
@@ -374,10 +384,9 @@ public class UsuariosActivity extends AppCompatActivity {
                         for (DataSnapshot userSnap : snapshot.getChildren()) {
                             String nuevoCuidadorUid = userSnap.getKey();
 
-                            // Leemos tu campo esPrincipal desde Firebase
                             Boolean esPrincipal = userSnap.child("esPrincipal").getValue(Boolean.class);
 
-                            // Si es true, es un Cuidador. Si es false o null, es Abuelo.
+                            // Solo se permite vincular cuentas de tipo cuidador (esPrincipal = true)
                             if (esPrincipal != null && esPrincipal) {
                                 mDatabase.child("Vinculos").child(nuevoCuidadorUid).child("id_adulto_vinculado")
                                         .setValue(uidAbueloActual)
@@ -385,7 +394,7 @@ public class UsuariosActivity extends AppCompatActivity {
                             } else {
                                 Toast.makeText(this, "Este correo pertenece a un Adulto Mayor, no a un cuidador.", Toast.LENGTH_LONG).show();
                             }
-                            return; // Terminamos porque ya lo encontramos
+                            return; // ya se encontró el usuario, no es necesario seguir
                         }
                     } else {
                         Toast.makeText(this, "No se encontró ningún usuario con ese correo", Toast.LENGTH_LONG).show();
@@ -393,8 +402,9 @@ public class UsuariosActivity extends AppCompatActivity {
                 });
     }
 
-    // --- INTERFAZ VISUAL ---
+    // --- Interfaz visual ---
 
+    /** Refresca la tarjeta del carrusel con los datos del usuario en el índice actual. */
     private void actualizarPantalla() {
         if (listaUsuarios.isEmpty()) return;
 
@@ -414,7 +424,7 @@ public class UsuariosActivity extends AppCompatActivity {
             ivPerfil.setImageResource(R.drawable.usuario);
         }
 
-        //Comparamos si este usuario soy yo
+        // Distingue el perfil propio del de un cuidador de apoyo
         boolean esMiPerfil = user.getUid().equals(miUid);
 
         if (esMiPerfil) {
@@ -441,18 +451,18 @@ public class UsuariosActivity extends AppCompatActivity {
         btnSiguiente.setAlpha(indiceActual < listaUsuarios.size() - 1 ? 1.0f : 0.5f);
     }
 
+    /** Confirma y desvincula a un cuidador de apoyo eliminando su nodo en Vinculos. */
     private void mostrarDialogEliminar() {
-        // En lugar de un layout personalizado, usamos el AlertDialog nativo por rapidez y limpieza
         new AlertDialog.Builder(this)
                 .setTitle("Eliminar Cuidador")
                 .setMessage("¿Estás seguro de que deseas desvincular a este cuidador? Ya no podrá ver la información del adulto mayor.")
                 .setPositiveButton("Sí, eliminar", (dialog, which) -> {
                     Usuario userAEliminar = listaUsuarios.get(indiceActual);
-                    // Borramos su nodo en Vinculos
+                    // Elimina el vínculo del cuidador seleccionado
                     mDatabase.child("Vinculos").child(userAEliminar.getUid()).removeValue()
                             .addOnSuccessListener(aVoid -> {
                                 Toast.makeText(this, "Cuidador desvinculado", Toast.LENGTH_SHORT).show();
-                                // La lista se actualizará sola gracias al addValueEventListener
+                                // La lista se refresca automáticamente por el addValueEventListener
                             });
                 })
                 .setNegativeButton("Cancelar", null)

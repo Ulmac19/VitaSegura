@@ -15,6 +15,14 @@ import androidx.core.view.WindowInsetsCompat;
 import android.content.SharedPreferences;
 import android.widget.RadioGroup;
 
+/**
+ * Pantalla de configuración de preferencias del usuario.
+ *
+ * Permite ajustar la frecuencia de actualización de salud y de ubicación, y
+ * activar o desactivar las notificaciones automáticas. Todas las preferencias se
+ * persisten en SharedPreferences ("VitaConfig"). Incluye un buscador que filtra
+ * las secciones por título.
+ */
 public class ConfiguracionActivity extends AppCompatActivity {
 
     private EditText etBuscar;
@@ -27,7 +35,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_configuracion);
 
-        //Vincular RadioGroup
+        // Preferencia: frecuencia de actualización de salud
         rgSalud = findViewById(R.id.rg_salud);
         rgUbicacion = findViewById(R.id.rg_ubicacion);
 
@@ -46,6 +54,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
         });
 
 
+        // Preferencia: frecuencia de actualización de ubicación
         int freqUbicacion = prefs.getInt("frecuencia_ubicacion", 5);
         if (freqUbicacion == 5) rgUbicacion.check(R.id.rb_ubicacion_5);
         else if (freqUbicacion == 10) rgUbicacion.check(R.id.rb_ubicacion_10);
@@ -55,6 +64,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
             prefs.edit().putInt("frecuencia_ubicacion", minutos).apply();
         });
 
+        // Preferencia: activar o desactivar las notificaciones automáticas
         rgNotificaciones = findViewById(R.id.rg_notificaciones);
         boolean desactivadas = prefs.getBoolean("notificaciones_desactivadas", false);
         rgNotificaciones.check(desactivadas ? R.id.rb_notif_si : R.id.rb_notif_no);
@@ -63,7 +73,6 @@ public class ConfiguracionActivity extends AppCompatActivity {
             prefs.edit().putBoolean("notificaciones_desactivadas", desactivar).apply();
         });
 
-        // Vincular vistas
         etBuscar = findViewById(R.id.et_buscar_config);
         ivClearSearch = findViewById(R.id.iv_clear_search);
         sectionSalud = findViewById(R.id.section_salud);
@@ -73,13 +82,13 @@ public class ConfiguracionActivity extends AppCompatActivity {
         // Botón atrás
         findViewById(R.id.iv_back_config).setOnClickListener(v -> finish());
 
-        // Botón de cancelar búsqueda (X)
+        // Botón para limpiar la búsqueda
         ivClearSearch.setOnClickListener(v -> {
-            etBuscar.setText(""); // Limpia el texto
+            etBuscar.setText("");
             ivClearSearch.setVisibility(View.GONE);
         });
 
-        // Lógica de búsqueda
+        // Filtra las secciones a medida que se escribe
         etBuscar.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -109,8 +118,9 @@ public class ConfiguracionActivity extends AppCompatActivity {
         });
     }
 
+    /** Muestra u oculta cada sección según si su título coincide con la búsqueda. */
     private void filtrarConfiguraciones(String query) {
-        // Si la búsqueda está vacía, mostrar todas las secciones
+        // Con la búsqueda vacía se muestran todas las secciones
         if (query.isEmpty()) {
             sectionSalud.setVisibility(View.VISIBLE);
             sectionUbicacion.setVisibility(View.VISIBLE);
@@ -118,7 +128,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
             return;
         }
 
-        // Lógica de búsqueda: si el título de la sección contiene el texto, se muestra
+        // Cada sección se muestra solo si su título contiene el texto buscado
         sectionSalud.setVisibility("actualización de datos de salud".contains(query) ? View.VISIBLE : View.GONE);
         sectionUbicacion.setVisibility("actualización de la ubicación".contains(query) ? View.VISIBLE : View.GONE);
         sectionNotificaciones.setVisibility("notificaciones".contains(query) ? View.VISIBLE : View.GONE);

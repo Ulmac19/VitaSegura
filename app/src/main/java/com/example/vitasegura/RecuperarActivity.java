@@ -21,6 +21,13 @@ import com.google.firebase.functions.FirebaseFunctions;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Primer paso del flujo de recuperación de contraseña.
+ *
+ * Solicita el correo del usuario e invoca la Cloud Function
+ * enviarCodigoRecuperacion, que envía un código de 6 dígitos por email. Al
+ * completarse, avanza a IngresarCodigoActivity.
+ */
 public class RecuperarActivity extends AppCompatActivity {
 
     private EditText etCorreo;
@@ -57,15 +64,14 @@ public class RecuperarActivity extends AppCompatActivity {
             return;
         }
 
-        // Deshabilitar el botón para evitar múltiples clics
+        // Evita envíos duplicados deshabilitando el botón mientras se procesa
         btnEnviar.setEnabled(false);
         btnEnviar.setText("Enviando...");
 
-        // Preparamos los datos que le enviaremos a la nube
         Map<String, Object> data = new HashMap<>();
         data.put("email", correo);
 
-        // Llamamos a la función "enviarCodigoRecuperacion" que creaste en index.js
+        // Invoca la Cloud Function que genera y envía el código por correo
         mFunctions.getHttpsCallable("enviarCodigoRecuperacion")
                 .call(data)
                 .addOnCompleteListener(task -> {
@@ -75,7 +81,7 @@ public class RecuperarActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Toast.makeText(this, "Código enviado con éxito a tu correo", Toast.LENGTH_LONG).show();
 
-                        // Pasamos a la siguiente pantalla y le mandamos el correo para validarlo allá
+                        // Pasa el correo a la siguiente pantalla para validar el código
                         Intent intent = new Intent(RecuperarActivity.this, IngresarCodigoActivity.class);
                         intent.putExtra("correoUsuario", correo);
                         startActivity(intent);

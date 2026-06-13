@@ -35,21 +35,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Servicio en primer plano que centraliza el monitoreo de salud del adulto mayor.
+ *
+ * Recibe por broadcast los datos crudos que la pulsera envía vía Bluetooth Low
+ * Energy (signos vitales, ubicación y alertas), los procesa y los escribe en
+ * Firebase. Además revisa periódicamente los horarios de medicación y lanza los
+ * recordatorios locales correspondientes. Las alertas generadas sin conexión se
+ * encolan en SQLite mediante AlertasOfflineDBHelper.
+ */
 public class SaludService extends Service {
     private DatabaseReference mDatabase;
     private String uidAdulto;
 
-    // --- Variables para Medicamentos ---
+    // --- Estado de medicamentos ---
     private List<Medicamento> listaMeds = new ArrayList<>();
     private Handler medHandler = new Handler(Looper.getMainLooper());
     private Runnable medRunnable;
     private java.util.HashMap<String, Long> historialAlertasMeds = new java.util.HashMap<>();
 
-    // --- Control de Spam de Alertas ---
+    // --- Antispam de alertas de la pulsera ---
     private long ultimaAlertaEnviada = 0;
     private static final long INTERVALO_MINIMO_ALERTA = 15000; // 15 segundos
 
-    // --- Control de Spam de Signos Vitales ---
+    // --- Antispam de alertas de signos vitales ---
     private long ultimaAlertaBpm = 0;
     private long ultimaAlertaOxi = 0;
     private static final long COOLDOWN_VITALES = 600000; // 10 minutos en milisegundos
@@ -63,7 +72,6 @@ public class SaludService extends Service {
                 String rawData = intent.getStringExtra("valor_raw");
                 if (rawData != null) procesarYEnviar(rawData);
             } else if ("PULSERA_DESCONECTADA".equals(accion)) {
-                //Si se desconecta, lanzamos alerta
                 lanzarAlertaDesconexion();
             }
         }
@@ -79,7 +87,7 @@ public class SaludService extends Service {
             iniciarVigilanciaMedicamentos();
         }
 
-        // Registrar el receptor para captar datos Y desconexiones
+        // Registra el receptor para captar tanto los datos como las desconexiones de la pulsera
         IntentFilter filter = new IntentFilter();
         filter.addAction("DATA_PULSERA_REAL");
         filter.addAction("PULSERA_DESCONECTADA");
@@ -112,7 +120,10 @@ public class SaludService extends Service {
         startForeground(1, notification);
     }
 
-    // --- Lógica de Notificación de Medicamentos ---
+    /**
+     * Mantiene en memoria la lista de medicamentos y programa la revisión de
+     * horarios cada 10 segundos.
+     */
     private void iniciarVigilanciaMedicamentos() {
         mDatabase.child("Usuarios").child(uidAdulto).child("Medicamentos")
                 .addValueEventListener(new ValueEventListener() {
@@ -137,24 +148,29 @@ public class SaludService extends Service {
         medHandler.post(medRunnable);
     }
 
+    /**
+     * Revisa todos los medicamentos con horario y lanza el recordatorio cuando el
+     * minuto actual coincide con alguna de las tomas del ciclo de 24 horas.
+     * Aplica un antispam de 2 minutos por medicamento para no repetir el aviso.
+     */
     private void revisarHoraMedicamentos() {
         Calendar ahora = Calendar.getInstance();
-        int horaActual = ahora.get(Calendar.HOUR_OF_DAY); // Formato 0-23 horas
+        int horaActual = ahora.get(Calendar.HOUR_OF_DAY); // formato 0-23
         int minutoActual = ahora.get(Calendar.MINUTE);
         long tiempoActualMs = System.currentTimeMillis();
 
-        // Convertimos la hora actual a los minutos totales del día (Ej: 01:00 AM = 60 min)
+        // Hora actual expresada en minutos totales del día (ej. 01:00 = 60)
         int minutosActualesTotales = (horaActual * 60) + minutoActual;
 
         for (Medicamento med : listaMeds) {
             String freq = med.getFrecuencia();
 
-            // Ignorar los de dolor
+            // Los medicamentos "solo si hay dolor" no tienen horario
             if (freq == null || freq.equals("Solo si hay dolor")) continue;
 
             try {
                 int frecuenciaHoras = Integer.parseInt(freq.replaceAll("[^0-9]", ""));
-                if (frecuenciaHoras <= 0) continue; // Protección contra divisiones entre cero
+                if (frecuenciaHoras <= 0) continue; // evita divisiones entre cero
                 int frecuenciaEnMinutos = frecuenciaHoras * 60;
 
                 String[] partesHora = med.getHora().split(":");
@@ -165,39 +181,36 @@ public class SaludService extends Service {
 
                 boolean tocaDosis = false;
 
-                // Generamos todas las tomas exactas que le tocan en un ciclo de 24 horas
+                // Recorre todas las tomas del ciclo de 24 horas
                 int maxTomasAlDia = (24 * 60) / frecuenciaEnMinutos;
 
                 for (int i = 0; i <= maxTomasAlDia; i++) {
-                    // Calculamos a qué minuto del día cae esta dosis
-                    int minutoDeTomaEsperada = (minutosInicioTotales + (i * frecuenciaEnMinutos)) % 1440; // 1440 min = 24h
+                    // Minuto del día en el que cae esta dosis (1440 min = 24 h)
+                    int minutoDeTomaEsperada = (minutosInicioTotales + (i * frecuenciaEnMinutos)) % 1440;
 
-                    // Comparamos el reloj de tu celular con la toma esperada
                     int diferencia = minutosActualesTotales - minutoDeTomaEsperada;
 
-                    // Tolerancia estricta: si es el minuto exacto (0) o el sistema se retrasó un minuto (1)
-                    // El -1439 cubre el caso extremo de que toque a las 23:59 y sean las 00:00
+                    // Coincide en el minuto exacto (0), con un retraso de un minuto (1)
+                    // o en el cruce de medianoche de 23:59 a 00:00 (-1439)
                     if (diferencia == 0 || diferencia == 1 || diferencia == -1439) {
                         tocaDosis = true;
-                        break; // Ya encontramos que sí le toca la dosis, dejamos de buscar
+                        break;
                     }
                 }
 
-                // SI SÍ LE TOCA LA DOSIS, REVISAMOS LA MEMORIA ANTISPAM
                 if (tocaDosis) {
-                    // Buscamos si ya le avisamos de esta pastilla hace un momento
+                    // Última vez que se notificó este medicamento
                     long ultimaVezQueSono = historialAlertasMeds.containsKey(med.getId()) ? historialAlertasMeds.get(med.getId()) : 0;
 
-                    // Bloqueo de 2 minutos: Garantiza que suene exactamente UNA VEZ y no haga spam
+                    // Antispam de 2 minutos: garantiza un único aviso por toma
                     if (tiempoActualMs - ultimaVezQueSono > 120000) {
                         dispararNotificacionMed(med);
-                        // Guardamos en la memoria que ya sonó
                         historialAlertasMeds.put(med.getId(), tiempoActualMs);
                     }
                 }
 
             } catch (Exception e) {
-                // Ignorar si el texto está mal escrito y pasar al siguiente medicamento
+                // Frecuencia u hora con formato inválido: se omite este medicamento
             }
         }
     }
@@ -241,7 +254,7 @@ public class SaludService extends Service {
         }
     }
 
-    //Metodo de notificacion en caso de desconexion de la pulsera
+    /** Lanza una notificación cuando la pulsera pierde la conexión Bluetooth. */
     private void lanzarAlertaDesconexion(){
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         String canalId = "canal_desconexion";
@@ -267,15 +280,20 @@ public class SaludService extends Service {
                 .setAutoCancel(true);
 
         if(manager != null){
-            //ID fijo anti spam para que no se repita la notificacion, sino que se actualice
+            // ID fijo para que la notificación se actualice en lugar de duplicarse
             manager.notify(999, builder.build());
         }
     }
 
+    /**
+     * Interpreta la trama de texto recibida de la pulsera y deriva cada bloque a
+     * su destino: signos vitales y ubicación se escriben en Firebase, y las
+     * alertas se envían (o encolan si no hay conexión).
+     */
     private void procesarYEnviar(String rawData) {
         String cleanData = rawData.trim();
 
-        // --- 1. PROCESAR SIGNOS VITALES ---
+        // --- 1. Signos vitales ---
         if (cleanData.contains("BPM:") && cleanData.contains("SpO2:")) {
             try {
                 String bpmStr = cleanData.split("BPM:")[1].trim().split(" ")[0];
@@ -293,7 +311,7 @@ public class SaludService extends Service {
             } catch (Exception e) {}
         }
 
-        // --- 2. PROCESAR UBICACIÓN ---
+        // --- 2. Ubicación GPS ---
         if (cleanData.contains("LAT:") && cleanData.contains("LON:")) {
             try {
                 String[] partes = cleanData.split(" ");
@@ -312,11 +330,11 @@ public class SaludService extends Service {
             } catch (Exception e) {}
         }
 
-        // --- 3. PROCESAR ALERTAS (CON FILTRO DE SPAM) ---
+        // --- 3. Alertas (SOS, caída...) con antispam ---
         if (cleanData.contains("ALERTA:")) {
             long tiempoActual = System.currentTimeMillis();
 
-            // Solo procesamos si han pasado más de 15 segundos desde la última alerta enviada
+            // Solo se procesa si pasaron más de 15 segundos desde la última alerta
             if (tiempoActual - ultimaAlertaEnviada > INTERVALO_MINIMO_ALERTA) {
                 try {
                     String tipoAlerta = cleanData.split("ALERTA:")[1].trim().split(" ")[0];
@@ -353,23 +371,27 @@ public class SaludService extends Service {
         }
     }
 
+    /**
+     * Evalúa los signos vitales y emite un aviso informativo al cuidador cuando
+     * salen del rango normal. Aplica un cooldown de 10 minutos por tipo de signo.
+     */
     private void evaluarSignosVitales(float bpm, float oxi) {
         long tiempoActual = System.currentTimeMillis();
 
-        //1.Evaluar Frecuencia Cardiaca (Normal: 60-100 bpm)
+        // 1. Frecuencia cardíaca (rango normal: 60-100 lpm)
         if(tiempoActual - ultimaAlertaBpm > COOLDOWN_VITALES) {
             if(bpm > 100){
                 enviarAlertaInfo("Ritmo cardíaco elevado (Taquicardia): " + Math.round(bpm) + " lpm", "INFO_BPM");
                 ultimaAlertaBpm = tiempoActual;
-            } else if (bpm < 60 && bpm > 30) { //30 para evitar avisos falsos si la pulsera es retirada
+            } else if (bpm < 60 && bpm > 30) { // > 30 descarta lecturas falsas al retirar la pulsera
                 enviarAlertaInfo("Ritmo cardíaco bajo (Bradycardia): " + Math.round(bpm) + " lpm", "INFO_BPM");
                 ultimaAlertaBpm = tiempoActual;
             }
         }
 
-        //2.Evaluar Oxigeno (Normal: > 95%)
+        // 2. Saturación de oxígeno (rango normal: > 95%)
         if(tiempoActual - ultimaAlertaOxi > COOLDOWN_VITALES) {
-            if(oxi <= 94 && oxi > 50){ //50 para evitar falsos positivos
+            if(oxi <= 94 && oxi > 50){ // > 50 descarta falsos positivos
                 String gravedad = (oxi <= 90) ? "moderada/grave" : "leve";
                 enviarAlertaInfo("Hipoxemia " + gravedad + ". Oxigeno al " + Math.round(oxi) + "%", "INFO_OXI");
                 ultimaAlertaOxi = tiempoActual;
@@ -377,14 +399,17 @@ public class SaludService extends Service {
         }
     }
 
+    /**
+     * Publica un aviso informativo en EmergenciasPendientes, o lo encola en
+     * SQLite si no hay conexión a internet.
+     */
     private void enviarAlertaInfo(String mensaje, String tipo) {
         if (hayConexionInternet()) {
             HashMap<String, Object> info = new HashMap<>();
             info.put("mensaje", mensaje);
-            info.put("tipo", tipo); //Dice si es info o emergencia
+            info.put("tipo", tipo); // distingue entre aviso informativo y emergencia
             info.put("timestamp", ServerValue.TIMESTAMP);
 
-            //Nodo de las emergencias pendientes
             mDatabase.child("Usuarios").child(uidAdulto).child("EmergenciasPendientes")
                     .push().setValue(info);
         } else {
@@ -393,7 +418,7 @@ public class SaludService extends Service {
         }
     }
 
-    //Metodo para verificar si hay conexion
+    /** Indica si el dispositivo tiene actualmente una red con acceso a internet. */
     private boolean hayConexionInternet() {
         android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
                 getSystemService(Context.CONNECTIVITY_SERVICE);

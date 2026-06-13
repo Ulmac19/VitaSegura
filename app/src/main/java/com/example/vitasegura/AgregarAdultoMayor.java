@@ -17,6 +17,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+/**
+ * Pantalla que vincula al cuidador con un adulto mayor mediante un código temporal.
+ *
+ * Valida el código contra el nodo Codigos_Temporales (comprobando que exista y no
+ * haya expirado) y, si es correcto, crea el vínculo permanente en Vinculos y
+ * elimina el código para que no se reutilice.
+ */
 public class AgregarAdultoMayor extends AppCompatActivity {
 
     private EditText etCodigo;
@@ -52,6 +59,7 @@ public class AgregarAdultoMayor extends AppCompatActivity {
         });
     }
 
+    /** Busca el código ingresado, valida su vigencia y procede a vincular. */
     private void buscarCodigo() {
         String codigoIngresado = etCodigo.getText().toString().trim().toUpperCase();
 
@@ -60,22 +68,19 @@ public class AgregarAdultoMayor extends AppCompatActivity {
             return;
         }
 
-        // 1. Buscamos el código en la rama temporal
+        // 1. Busca el código en el nodo de códigos temporales
         mDatabase.child("Codigos_Temporales").child(codigoIngresado).get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful() && task.getResult().exists()) {
-                        //Extraer datos del código
                         String uidAbuelo = task.getResult().child("id_adulto_vinculado").getValue(String.class);
                         Long expiracion = task.getResult().child("expiresAt").getValue(Long.class);
 
                         if(uidAbuelo != null && expiracion != null){
-                            //Verificar si ya caduco
                             if(System.currentTimeMillis() > expiracion) {
                                 Toast.makeText(this, "El código ha expirado", Toast.LENGTH_SHORT).show();
-                                //Borrar basura
+                                // Elimina el código caducado
                                 task.getResult().getRef().removeValue();
                             }else{
-                                //Si no caduco, procedemos a vincular
                                 procederAVincular(uidAbuelo, codigoIngresado);
                             }
                         }else{
@@ -87,17 +92,17 @@ public class AgregarAdultoMayor extends AppCompatActivity {
                 });
     }
 
+    /** Crea el vínculo permanente cuidador-adulto y consume el código temporal. */
     private void procederAVincular(String uidAbuelo, String codigoUsado) {
-        // 2. Creamos el vínculo permanente: Vinculos -> UID_Cuidador -> UID_Abuelo
+        // 2. Crea el vínculo permanente: Vinculos -> uidCuidador -> uidAbuelo
         mDatabase.child("Vinculos").child(uidCuidador).child("id_adulto_vinculado").setValue(uidAbuelo)
                 .addOnSuccessListener(aVoid -> {
 
-                    // 3. Borramos el código temporal para que no se use de nuevo
+                    // 3. Elimina el código temporal para impedir su reutilización
                     mDatabase.child("Codigos_Temporales").child(codigoUsado).removeValue();
 
                     Toast.makeText(this, "¡Vinculación Exitosa!", Toast.LENGTH_SHORT).show();
 
-                    // Regresamos al panel principal del familiar
                     finish();
                 })
                 .addOnFailureListener(e -> {

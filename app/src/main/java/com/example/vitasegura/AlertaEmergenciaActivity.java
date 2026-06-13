@@ -23,6 +23,13 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Pantalla de alerta de emergencia del adulto mayor.
+ *
+ * Muestra una cuenta regresiva con vibración que el usuario puede cancelar. Si
+ * llega a cero, envía la alerta de pánico al cuidador: la publica en Firebase si
+ * hay conexión o la encola en SQLite para reenviarla cuando vuelva la red.
+ */
 public class AlertaEmergenciaActivity extends AppCompatActivity {
 
     private TextView tvContador;
@@ -39,7 +46,7 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
         btnCancelar = findViewById(R.id.btn_cancelar_alerta);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
-        // Iniciar cuenta regresiva de 5 segundos
+        // Cuenta regresiva de 6 segundos antes de enviar la alerta
         iniciarContador(6000);
 
         btnCancelar.setOnClickListener(v -> {
@@ -50,7 +57,7 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
                 vibrator.cancel();
             }
             Toast.makeText(this, "Alerta cancelada", Toast.LENGTH_SHORT).show();
-            finish(); // Regresa al menú principal
+            finish();
         });
 
 
@@ -61,6 +68,7 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
         });
     }
 
+    /** Lanza la cuenta regresiva, actualizando el contador y vibrando cada segundo. */
     private void iniciarContador(long tiempo) {
         countDownTimer = new CountDownTimer(tiempo, 1000) {
             @Override
@@ -68,7 +76,7 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
                 int segundos = (int) (millisUntilFinished / 1000);
                 tvContador.setText(String.valueOf(segundos));
 
-                // Vibrar en cada segundo
+                // Vibra en cada segundo del conteo
                 if (vibrator != null) {
                     vibrator.vibrate(200);
                 }
@@ -81,17 +89,16 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
         }.start();
     }
 
+    /** Envía la alerta de pánico al cuidador, o la encola si no hay conexión. */
     private void enviarAlertaFirebase() {
         if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
 
         String miUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        //El timestamp exacto
         long timestampActual = System.currentTimeMillis();
         String tipo = "SOS_BOTON";
         String mensaje = "¡Botón de pánico presionado! Entra a la app para ver la ubicación.";
 
-        //Subir alerta a Firebase si hay conexión
         if(hayConexionInternet()){
             DatabaseReference refAlertas = FirebaseDatabase.getInstance().getReference()
                     .child("Usuarios").child(miUid).child("EmergenciasPendientes");
@@ -101,12 +108,12 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
             alerta.put("mensaje", mensaje);
             alerta.put("timestamp", timestampActual);
 
-            refAlertas.removeValue(); //Eliminamos las alertas anteriores
+            refAlertas.removeValue(); // descarta alertas anteriores no atendidas
             refAlertas.push().setValue(alerta);
 
             Toast.makeText(AlertaEmergenciaActivity.this, "¡AYUDA SOLICITADA AL CUIDADOR!", Toast.LENGTH_LONG).show();
         }else {
-            //No hay internet: Se guarda en SQLite
+            // Sin internet: la alerta se encola en SQLite para reenviarse al reconectar
             AlertasOfflineDBHelper dbHelper = AlertasOfflineDBHelper.getInstance(this);
             dbHelper.insertarAlerta(tipo, mensaje, timestampActual);
 
@@ -116,7 +123,7 @@ public class AlertaEmergenciaActivity extends AppCompatActivity {
         finish();
     }
 
-    //Metodo para verificar si hay conexión
+    /** Indica si el dispositivo tiene actualmente una red con acceso a internet. */
     private boolean hayConexionInternet(){
         android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
                 getSystemService(Context.CONNECTIVITY_SERVICE);

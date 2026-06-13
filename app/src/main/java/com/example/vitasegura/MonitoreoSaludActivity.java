@@ -38,7 +38,6 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 
-// NUEVOS IMPORTS PARA FIREBASE
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -51,6 +50,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Pantalla de autoseguimiento de salud para el adulto mayor.
+ *
+ * Recibe por broadcast los datos en vivo de la pulsera, muestra el pulso y la
+ * oxigenación actuales y dibuja los promedios diarios (30 días) en gráficas de
+ * MPAndroidChart con marcador animado. Mantiene un historial local en SQLite y
+ * sube a Firebase los signos vitales (respetando la frecuencia configurada) y la
+ * ubicación.
+ */
 public class MonitoreoSaludActivity extends AppCompatActivity {
 
     private TextView tvBpm, tvOxi;
@@ -60,7 +68,6 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
     private final Handler hideHandler = new Handler(Looper.getMainLooper());
     private long ultimaVezSubidoSalud = 0;
 
-    // VARIABLES PARA FIREBASE
     private DatabaseReference mDatabase;
     private String uidAdulto;
 
@@ -81,7 +88,6 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_monitoreo_salud);
 
-        // INICIALIZAR FIREBASE
         mDatabase = FirebaseDatabase.getInstance().getReference();
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             uidAdulto = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -124,6 +130,10 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         findViewById(R.id.iv_back_salud).setOnClickListener(v -> finish());
     }
 
+    /**
+     * Configura el estilo, los ejes y el marcador autodesvaneciente de una gráfica
+     * de línea.
+     */
     private void setupGrafica(LineChart chart, String colorHex, String unidadY, float granularidadY, float maxValY, String titulo) {
         if (chart == null) return;
 
@@ -217,6 +227,7 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         });
     }
 
+    /** Reconstruye ambas gráficas a partir de los promedios diarios en SQLite. */
     private void cargarHistorialGraficas() {
         fechasEjeX.clear();
         List<Entry> entriesBpm = dbHelper.getPromediosGrafica("bpm", fechasEjeX);
@@ -254,11 +265,12 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         chart.invalidate();
     }
 
+    /** Interpreta la trama de la pulsera y actualiza vistas, historial y Firebase. */
     private void procesarDatosReales(String rawData) {
         try {
             String cleanData = rawData.trim();
 
-            // PROCESAR SALUD (BPM y SpO2)
+            // Signos vitales (BPM y SpO2)
             if (cleanData.contains("BPM:") && cleanData.contains("SpO2:")) {
                 String bpmStr = cleanData.split("BPM:")[1].trim().split(" ")[0];
                 String oxiStr = cleanData.split("SpO2:")[1].trim().split("%")[0];
@@ -268,7 +280,6 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
                 dbHelper.insertarLecturaTemporal(valBpm, valOxi);
                 dbHelper.consolidarDiasAnteriores();
 
-                // ENVIAR SALUD A FIREBASE
                 subirSaludAFirebase(valBpm, valOxi);
 
                 runOnUiThread(() -> {
@@ -278,10 +289,9 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
                 });
             }
 
-            // PROCESAR UBICACIÓN (Basado en el formato Arduino LAT:xx LON:xx)
+            // Ubicación GPS (formato de la pulsera: "LAT:20.6597 LON:-103.3496")
             if (cleanData.contains("LAT:") && cleanData.contains("LON:")) {
                 try {
-                    // Ejemplo: "LAT:20.6597 LON:-103.3496"
                     String[] partes = cleanData.split(" ");
                     String latStr = "";
                     String lonStr = "";
@@ -294,22 +304,22 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
                     if(!latStr.isEmpty() && !lonStr.isEmpty()) {
                         subirUbicacionAFirebase(Double.parseDouble(latStr), Double.parseDouble(lonStr));
                     }
-                } catch (Exception e) { /* Error de parseo */ }
+                } catch (Exception e) { /* coordenadas con formato inválido */ }
             }
 
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    // MÉTODOS DE ENVÍO A FIREBASE
+    /** Sube los signos vitales a Firebase respetando la frecuencia configurada. */
     private void subirSaludAFirebase(float bpm, float oxi) {
         if (uidAdulto == null) return;
 
-        //Obtener la configuracion del usuario
+        // Frecuencia de subida configurada por el usuario
         SharedPreferences prefs = getSharedPreferences("VitaConfig", MODE_PRIVATE);
         int minutosConfigurados = prefs.getInt("frecuencia_salud", 5);
         long milisegundosEspera = minutosConfigurados * 60 * 1000;
 
-        //Verificar si ya paso el tiempo suficiente
+        // Solo sube si transcurrió el intervalo configurado desde la última vez
         long tiempoActual = System.currentTimeMillis();
         if(tiempoActual - ultimaVezSubidoSalud >= milisegundosEspera){
             HashMap<String, Object> salud = new HashMap<>();
@@ -321,6 +331,7 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         }
     }
 
+    /** Publica la última ubicación GPS del adulto en Firebase. */
     private void subirUbicacionAFirebase(double lat, double lon) {
         if (uidAdulto == null) return;
         HashMap<String, Object> gps = new HashMap<>();
@@ -338,6 +349,10 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
         try { unregisterReceiver(receptorDatos); } catch (Exception e) {}
     }
 
+    /**
+     * Helper de SQLite que guarda las lecturas vitales del día y los promedios
+     * diarios consolidados (máximo 30 días).
+     */
     private static class HealthDBHelper extends SQLiteOpenHelper {
         private static final String DB_NAME = "VitaSalud.db";
         public HealthDBHelper(Context context) { super(context, DB_NAME, null, 2); }
@@ -364,6 +379,7 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
             db.insert("temp_readings", null, v);
         }
 
+        /** Promedia las lecturas de días ya cerrados y las mueve a la tabla de promedios diarios. */
         public void consolidarDiasAnteriores() {
             SQLiteDatabase db = this.getWritableDatabase();
             String hoy = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
@@ -384,6 +400,10 @@ public class MonitoreoSaludActivity extends AppCompatActivity {
             c.close();
         }
 
+        /**
+         * Devuelve los promedios diarios (hasta 30) más el promedio del día en
+         * curso para las gráficas, rellenando outFechas con las etiquetas del eje X.
+         */
         public List<Entry> getPromediosGrafica(String tipo, List<String> outFechas) {
             List<Entry> entries = new ArrayList<>();
             SQLiteDatabase db = this.getReadableDatabase();

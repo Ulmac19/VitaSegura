@@ -44,11 +44,19 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Pantalla del cuidador que muestra los signos vitales del adulto mayor.
+ *
+ * Presenta el valor actual de pulso y oxigenación junto con dos gráficas: una
+ * diaria (líneas) y otra semanal (barras agrupadas), construidas con
+ * MPAndroidChart. Consulta periódicamente los datos de Firebase y consolida un
+ * historial local en SQLite (lecturas del día y promedios diarios).
+ */
 public class InformacionAbueloActivity extends AppCompatActivity {
 
     private TextView tvBpm, tvOxi;
     private LineChart chartDiario;
-    private BarChart chartSemanal; // Cambiado a BarChart
+    private BarChart chartSemanal;
 
     private DatabaseReference mDatabase;
     private String uidCuidador;
@@ -91,6 +99,7 @@ public class InformacionAbueloActivity extends AppCompatActivity {
         });
     }
 
+    /** Lee la frecuencia configurada y arranca el monitoreo del adulto vinculado. */
     private void obtenerIdAbueloYConfiguracion() {
         SharedPreferences prefs = getSharedPreferences("VitaConfig", MODE_PRIVATE);
         int minutos = prefs.getInt("frecuencia_salud", 5);
@@ -104,6 +113,7 @@ public class InformacionAbueloActivity extends AppCompatActivity {
                 });
     }
 
+    /** Consulta en bucle los signos vitales actuales y actualiza vistas e historial. */
     private void iniciarMonitoreoPeriodico(String uidAbuelo) {
         runnableMonitoreo = new Runnable() {
             @Override
@@ -129,12 +139,13 @@ public class InformacionAbueloActivity extends AppCompatActivity {
         handlerMonitoreo.post(runnableMonitoreo);
     }
 
+    /** Reconstruye ambas gráficas a partir de los promedios almacenados en SQLite. */
     private void cargarHistorialGraficas() {
         List<String> fechasEjeX = new ArrayList<>();
         List<Entry> dailyBpm = dbHelper.getPromediosGrafica("bpm", fechasEjeX);
         List<Entry> dailyOxi = dbHelper.getPromediosGrafica("oxi", null);
 
-        // 1. DIBUJAR GRÁFICA DIARIA (Líneas)
+        // 1. Gráfica diaria (líneas)
         actualizarGraficaDiaria(chartDiario, dailyBpm, dailyOxi);
         if (chartDiario != null && !fechasEjeX.isEmpty()) {
             chartDiario.getXAxis().setValueFormatter(new ValueFormatter() {
@@ -148,7 +159,7 @@ public class InformacionAbueloActivity extends AppCompatActivity {
             chartDiario.moveViewToX(fechasEjeX.size());
         }
 
-        // 2. DIBUJAR GRÁFICA SEMANAL (Barras Agrupadas)
+        // 2. Gráfica semanal (barras agrupadas)
         calcularGraficaSemanal(dailyBpm, dailyOxi);
     }
 
@@ -174,6 +185,7 @@ public class InformacionAbueloActivity extends AppCompatActivity {
         chart.invalidate();
     }
 
+    /** Agrupa los promedios diarios en bloques de 7 días para la gráfica semanal de barras. */
     private void calcularGraficaSemanal(List<Entry> dailyBpm, List<Entry> dailyOxi) {
         List<BarEntry> weeklyBpm = new ArrayList<>();
         List<BarEntry> weeklyOxi = new ArrayList<>();
@@ -213,18 +225,18 @@ public class InformacionAbueloActivity extends AppCompatActivity {
 
         BarData data = new BarData(setBpm, setOxi);
 
-        // Ajustes para agrupar las barras una junto a la otra
+        // Parámetros de agrupación de barras; deben sumar 1.0 por grupo:
+        // (barWidth + barSpace) * 2 + groupSpace = 1.0
         float groupSpace = 0.2f;
         float barSpace = 0.05f;
         float barWidth = 0.35f;
-        // (0.35 + 0.05) * 2 + 0.2 = 1.0 (Obligatorio para que cuadren las barras)
 
         data.setBarWidth(barWidth);
         chartSemanal.setData(data);
         chartSemanal.groupBars(0f, groupSpace, barSpace);
 
         XAxis xAxis = chartSemanal.getXAxis();
-        xAxis.setCenterAxisLabels(true); // Centrar etiquetas debajo del grupo
+        xAxis.setCenterAxisLabels(true); // centra la etiqueta bajo cada grupo de barras
         xAxis.setAxisMinimum(0f);
         xAxis.setAxisMaximum(etiquetasSemanas.size());
         xAxis.setValueFormatter(new ValueFormatter() {
@@ -238,19 +250,23 @@ public class InformacionAbueloActivity extends AppCompatActivity {
         chartSemanal.invalidate();
     }
 
-    // Usamos BarLineChartBase para que aplique tanto a LineChart como a BarChart
+    /**
+     * Aplica la configuración común de estilo, zoom, desplazamiento y marcador a
+     * una gráfica. Recibe BarLineChartBase para servir tanto al LineChart como al
+     * BarChart.
+     */
     private void setupGrafica(BarLineChartBase<?> chart) {
         if (chart == null) return;
 
         chart.getDescription().setEnabled(false);
 
-        // HABILITAR ZOOM Y DESPLAZAMIENTO
+        // Zoom y desplazamiento
         chart.setTouchEnabled(true);
         chart.setDragEnabled(true);
         chart.setScaleEnabled(true);
         chart.setPinchZoom(true);
 
-        // HABILITAR MARCADOR AL TOCAR
+        // Marcador que aparece al tocar un punto
         CustomMarkerView mv = new CustomMarkerView(this, R.layout.marker_view);
         mv.setChartView(chart);
         chart.setMarker(mv);
@@ -285,6 +301,7 @@ public class InformacionAbueloActivity extends AppCompatActivity {
     }
 
 
+    /** Marcador que muestra el valor (BPM o %) del punto seleccionado en las gráficas. */
     public static class CustomMarkerView extends MarkerView {
         private TextView tvContent;
 
@@ -307,7 +324,7 @@ public class InformacionAbueloActivity extends AppCompatActivity {
             return new MPPointF(-(getWidth() / 2f), -getHeight() - 15f);
         }
 
-        //Dibujar el fondo oscuro debajo del texto
+        // Dibuja un fondo oscuro redondeado detrás del texto del marcador
         @Override
         public void draw(android.graphics.Canvas canvas, float posx, float posy) {
             MPPointF offset = getOffsetForDrawingAtPoint(posx, posy);
@@ -317,21 +334,22 @@ public class InformacionAbueloActivity extends AppCompatActivity {
             canvas.translate(posx + offset.x, posy + offset.y);
 
             android.graphics.Paint paint = new android.graphics.Paint();
-            paint.setColor(Color.parseColor("#CC000000")); // Negro al 80% de opacidad
+            paint.setColor(Color.parseColor("#CC000000")); // negro al 80% de opacidad
             paint.setStyle(android.graphics.Paint.Style.FILL);
-            paint.setAntiAlias(true); // Bordes suaves
+            paint.setAntiAlias(true);
 
-            //Rectángulo redondeado
             android.graphics.RectF rect = new android.graphics.RectF(0, 0, getWidth(), getHeight());
             canvas.drawRoundRect(rect, 15f, 15f, paint);
 
-            // Dibujar el contenido
             draw(canvas);
             canvas.restoreToCount(saveId);
         }
     }
 
-    // --- BASE DE DATOS LOCAL ---
+    /**
+     * Helper de SQLite que almacena las lecturas vitales del día y los promedios
+     * diarios consolidados, conservando un máximo de 30 días de historial.
+     */
     private static class HealthDBHelper extends SQLiteOpenHelper {
         private static final String DB_NAME = "VitaSaludFamiliar.db";
         public HealthDBHelper(Context context) { super(context, DB_NAME, null, 2); }
@@ -358,6 +376,7 @@ public class InformacionAbueloActivity extends AppCompatActivity {
             db.insert("temp_readings", null, v);
         }
 
+        /** Promedia las lecturas de días ya cerrados y las mueve a la tabla de promedios diarios. */
         public void consolidarDiasAnteriores() {
             SQLiteDatabase db = this.getWritableDatabase();
             String hoy = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
@@ -378,6 +397,11 @@ public class InformacionAbueloActivity extends AppCompatActivity {
             c.close();
         }
 
+        /**
+         * Devuelve los promedios diarios (hasta 30) más el promedio del día en
+         * curso para alimentar las gráficas. Rellena outFechas con las etiquetas
+         * del eje X si se proporciona.
+         */
         public List<Entry> getPromediosGrafica(String tipo, List<String> outFechas) {
             List<Entry> entries = new ArrayList<>();
             SQLiteDatabase db = this.getReadableDatabase();

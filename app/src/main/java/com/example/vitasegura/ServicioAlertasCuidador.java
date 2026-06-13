@@ -23,6 +23,15 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+/**
+ * Servicio en primer plano que vigila las emergencias del adulto mayor vinculado
+ * y avisa al cuidador.
+ *
+ * Resuelve dinámicamente a qué adulto escuchar mediante el nodo Vinculos y, por
+ * cada nueva alerta, la guarda siempre en el historial local (SQLite). La
+ * notificación push solo se lanza para alertas de los últimos 10 minutos y
+ * cuando el cuidador no las ha desactivado en su configuración.
+ */
 public class ServicioAlertasCuidador extends Service {
 
     private static final String CANAL_SERVICIO_ID = "Canal_Vigilancia_Cuidador";
@@ -36,7 +45,7 @@ public class ServicioAlertasCuidador extends Service {
     public void onCreate() {
         super.onCreate();
 
-        // 1. Crear el canal para el servicio persistente
+        // 1. Canal de notificación del servicio persistente
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel canal = new NotificationChannel(
                     CANAL_SERVICIO_ID, "Vigilancia Activa", NotificationManager.IMPORTANCE_LOW);
@@ -44,13 +53,13 @@ public class ServicioAlertasCuidador extends Service {
             if (manager != null) manager.createNotificationChannel(canal);
         }
 
-        // 2. Iniciar el Foreground Service (Obligatorio para que no muera al apagar pantalla)
+        // 2. Notificación persistente que mantiene vivo el foreground service
         Notification notificacionPersistente = new NotificationCompat.Builder(this, CANAL_SERVICIO_ID)
                 .setContentTitle("Modo Cuidador Activo")
                 .setContentText("Vigilando signos vitales del abuelo...")
                 .setSmallIcon(R.drawable.pulsera)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setOngoing(true) // Impide que el usuario la deslice para borrarla
+                .setOngoing(true) // no se puede descartar deslizando
                 .build();
 
         startForeground(2, notificacionPersistente);
@@ -58,12 +67,16 @@ public class ServicioAlertasCuidador extends Service {
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             uidCuidador = FirebaseAuth.getInstance().getCurrentUser().getUid();
             mDatabase = FirebaseDatabase.getInstance().getReference();
-            // Activamos persistencia para que Firebase no se desconecte al apagar pantalla
+            // Mantiene la sincronización aunque la app esté en segundo plano
             mDatabase.keepSynced(true);
             buscarVinculoYEscuchar();
         }
     }
 
+    /**
+     * Observa el vínculo del cuidador y (re)suscribe el listener de emergencias
+     * cuando cambia el adulto mayor asociado.
+     */
     private void buscarVinculoYEscuchar() {
         mDatabase.child("Vinculos").child(uidCuidador).child("id_adulto_vinculado")
                 .addValueEventListener(new ValueEventListener() {
@@ -91,6 +104,10 @@ public class ServicioAlertasCuidador extends Service {
                 });
     }
 
+    /**
+     * Suscribe el listener de EmergenciasPendientes del adulto indicado, guarda
+     * cada alerta en el historial y dispara la notificación cuando corresponde.
+     */
     private void escucharEmergencias(String idAbuelo) {
         refEmergenciasActual = mDatabase.child("Usuarios").child(idAbuelo).child("EmergenciasPendientes");
 
@@ -106,7 +123,7 @@ public class ServicioAlertasCuidador extends Service {
                     if (mensaje != null && timestamp != null) {
                         long tiempoActual = System.currentTimeMillis();
 
-                        //Filtro de Memoria: Verificamos si esta alerta exacta ya fue procesada
+                        // Deduplicación: se omite si esta alerta ya fue procesada
                         android.content.SharedPreferences prefs = getSharedPreferences("HistorialAlertas", Context.MODE_PRIVATE);
                         String idAlerta = snapshot.getKey();
 
@@ -114,14 +131,14 @@ public class ServicioAlertasCuidador extends Service {
 
                             boolean esEmergencia = tipo == null || !tipo.startsWith("INFO_");
 
-                            // 1. Guardar en SQLite siempre (sin importar antigüedad)
+                            // 1. Se guarda siempre en el historial local, sin importar la antigüedad
                             NotificacionesDBHelper db = NotificacionesDBHelper.getInstance(getApplicationContext());
                             String fechaActual = new java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(new java.util.Date());
                             String horaActual = new java.text.SimpleDateFormat("HH:mm a", java.util.Locale.getDefault()).format(new java.util.Date());
                             db.insertarNotificacion(mensaje, horaActual, fechaActual, esEmergencia, tiempoActual);
                             prefs.edit().putBoolean(idAlerta, true).apply();
 
-                            // 2. Lanzar notificación push solo para alertas recientes (últimos 10 min)
+                            // 2. La notificación push solo se lanza para alertas recientes (10 min)
                             if (tiempoActual - timestamp <= 600000) {
                                 android.content.SharedPreferences configPrefs = getSharedPreferences("VitaConfig", Context.MODE_PRIVATE);
                                 if (!configPrefs.getBoolean("notificaciones_desactivadas", false)) {
@@ -144,14 +161,15 @@ public class ServicioAlertasCuidador extends Service {
         refEmergenciasActual.addChildEventListener(listenerEmergencias);
     }
 
+    /** Lanza la notificación de emergencia (S.O.S.) con máxima prioridad y vibración. */
     private void lanzarAlarmaRoja(String mensaje) {
-        // --- CÓDIGO PARA DESPERTAR EL CELULAR ---
+        // Enciende la pantalla para asegurar que la alerta sea visible
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null) {
             PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK |
                     PowerManager.ACQUIRE_CAUSES_WAKEUP |
                     PowerManager.ON_AFTER_RELEASE, "VitaSegura:AlertaSOS");
-            wl.acquire(10000); // Mantiene el sistema despierto 10 segundos para asegurar que suene
+            wl.acquire(10000); // mantiene el sistema despierto 10 segundos
         }
 
         String canalAlarmaId = "Canal_Emergencia_Roja";
@@ -161,7 +179,7 @@ public class ServicioAlertasCuidador extends Service {
             NotificationChannel canal = new NotificationChannel(
                     canalAlarmaId, "Emergencias S.O.S", NotificationManager.IMPORTANCE_HIGH);
 
-            // Esto permite que la notificación se vea sobre la pantalla de bloqueo
+            // Permite mostrar la notificación sobre la pantalla de bloqueo
             canal.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             canal.enableVibration(true);
             canal.setVibrationPattern(new long[]{0, 1000, 500, 1000, 500, 1000});
@@ -181,7 +199,7 @@ public class ServicioAlertasCuidador extends Service {
                 .setContentTitle("🚨 ¡EMERGENCIA S.O.S! 🚨")
                 .setContentText(mensaje)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setCategory(NotificationCompat.CATEGORY_ALARM) // Categoría Alarma para bypass de "No molestar"
+                .setCategory(NotificationCompat.CATEGORY_ALARM) // categoría alarma para sortear el modo "No molestar"
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setVibrate(new long[]{0, 1000, 500, 1000, 500, 1000})
                 .setAutoCancel(true)
@@ -192,6 +210,10 @@ public class ServicioAlertasCuidador extends Service {
         }
     }
 
+    /**
+     * Lanza una notificación informativa (no crítica) y la enlaza con la pantalla
+     * pertinente según el tipo de aviso (signos vitales, medicación, etc.).
+     */
     private void lanzarAlertaInformativa(String mensaje, String tipo){
         String canalInfoId = "Canal_Informacion_Salud";
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -220,7 +242,7 @@ public class ServicioAlertasCuidador extends Service {
                 intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canalInfoId)
-                .setSmallIcon(R.drawable.notificacion) // Puedes usar otro icono si gustas
+                .setSmallIcon(R.drawable.notificacion)
                 .setContentTitle("Aviso de Monitoreo")
                 .setContentText(mensaje)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -234,7 +256,7 @@ public class ServicioAlertasCuidador extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY; // Asegura que el servicio se reinicie si el sistema lo mata
+        return START_STICKY; // el sistema reinicia el servicio si lo detiene
     }
 
     @Override

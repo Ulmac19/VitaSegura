@@ -8,6 +8,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+/**
+ * Actividad de diálogo de confirmación de borrado, reutilizable en ambos flujos.
+ *
+ * Presenta el layout de confirmación con estilo de diálogo; la acción concreta a
+ * confirmar la define la pantalla que la invoca.
+ */
 public class DialogConfirmarEliminarActivity extends AppCompatActivity {
 
     @Override

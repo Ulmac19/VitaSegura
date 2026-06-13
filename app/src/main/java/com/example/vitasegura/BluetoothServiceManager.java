@@ -6,11 +6,19 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import java.util.UUID;
 
+/**
+ * Singleton que centraliza la conexión GATT con la pulsera de salud por
+ * Bluetooth Low Energy.
+ *
+ * Conserva la referencia al BluetoothGatt activo para que distintas pantallas y
+ * servicios compartan la misma conexión, y expone enviarComandoVibrar() para
+ * disparar la vibración háptica de la pulsera. Utiliza el perfil Nordic UART.
+ */
 public class BluetoothServiceManager {
     private static BluetoothServiceManager instance;
     private BluetoothGatt bluetoothGatt;
 
-    // UUIDs obtenidos de tu app de prueba
+    // UUIDs del servicio Nordic UART expuesto por el firmware de la pulsera
     private final String SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
     private final String CHAR_RX_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
 
@@ -31,6 +39,7 @@ public class BluetoothServiceManager {
         return bluetoothGatt;
     }
 
+    /** Envía el comando "VIBRAR" a la pulsera para generar feedback háptico. */
     @SuppressLint("MissingPermission")
     public void enviarComandoVibrar() {
         if (bluetoothGatt != null) {

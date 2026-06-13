@@ -1,3 +1,13 @@
+/**
+ * Cloud Functions de VitaSegura.
+ *
+ * Expone dos funciones callable para el flujo de recuperación de contraseña:
+ * - enviarCodigoRecuperacion: genera un código de 6 dígitos (vigencia de 5 min)
+ *   y lo envía por correo mediante nodemailer.
+ * - cambiarPasswordOlvidada: valida el contexto y actualiza la contraseña del
+ *   usuario en Firebase Auth con privilegios de administrador.
+ */
+
 require('dotenv').config();
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -5,19 +15,22 @@ const nodemailer = require("nodemailer");
 
 admin.initializeApp();
 
+// Cliente SMTP de Gmail; las credenciales se leen de variables de entorno
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        
-        user: process.env.GMAIL_USER, 
+        user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS
     }
 });
 
-// En las versiones más nuevas de Firebase, el parámetro llega envuelto de forma distinta
+/**
+ * Genera un código de recuperación, lo guarda en la base de datos y lo envía al
+ * correo indicado.
+ */
 exports.enviarCodigoRecuperacion = functions.https.onCall(async (request) => {
-    
-    // Extraemos el correo electrónico del request, considerando las diferentes formas en que puede llegar
+
+    // El payload puede llegar envuelto en 'data' según la versión del SDK
     let email = "";
     if (request && request.data && request.data.email) {
         email = request.data.email;
@@ -25,7 +38,6 @@ exports.enviarCodigoRecuperacion = functions.https.onCall(async (request) => {
         email = request.email;
     }
 
-    // Validamos que se haya recibido el correo electrónico
     if (!email) {
         throw new functions.https.HttpsError("invalid-argument", "No se recibió el correo electrónico desde la app.");
     }
@@ -63,11 +75,15 @@ exports.enviarCodigoRecuperacion = functions.https.onCall(async (request) => {
     }
 });
 
+/**
+ * Verifica los datos recibidos y actualiza la contraseña del usuario en Firebase
+ * Auth, eliminando después el código de recuperación.
+ */
 exports.cambiarPasswordOlvidada = functions.https.onCall(async (request) => {
     let email = "";
     let newPassword = "";
-    
-    // Extraemos los datos enviados desde Android
+
+    // El payload puede llegar envuelto en 'data' según la versión del SDK
     if (request && request.data) {
         email = request.data.email;
         newPassword = request.data.newPassword;
@@ -81,15 +97,15 @@ exports.cambiarPasswordOlvidada = functions.https.onCall(async (request) => {
     }
 
     try {
-        // 1. Buscamos al usuario por su correo
+        // 1. Localiza al usuario por su correo
         const userRecord = await admin.auth().getUserByEmail(email);
-        
-        // 2. Le forzamos el cambio de contraseña usando sus privilegios de administrador
+
+        // 2. Actualiza la contraseña con privilegios de administrador
         await admin.auth().updateUser(userRecord.uid, {
             password: newPassword
         });
 
-        // Borrar el código de la base de datos para que no se re-use
+        // Elimina el código para impedir su reutilización
         await admin.database().ref(`CodigosRecuperacion/${email.replace(/\./g, "_")}`).remove();
 
         return { success: true, message: "Contraseña actualizada correctamente desde el servidor" };

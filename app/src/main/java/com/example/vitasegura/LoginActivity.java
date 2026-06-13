@@ -20,6 +20,13 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+/**
+ * Pantalla de inicio de sesión con correo y contraseña (Firebase Auth).
+ *
+ * Tras autenticar, consulta el rol del usuario en la base de datos y lo dirige
+ * a la pantalla principal del cuidador o del adulto mayor. Incluye el acceso al
+ * flujo de recuperación de contraseña.
+ */
 public class LoginActivity extends AppCompatActivity {
 
     private EditText etCorreo, etPassword;
@@ -68,6 +75,7 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+    /** Autentica con Firebase y redirige al usuario según su rol. */
     private void loginUsuario() {
         String correo = etCorreo.getText().toString().trim();
         String pass = etPassword.getText().toString().trim();
@@ -80,26 +88,23 @@ public class LoginActivity extends AppCompatActivity {
         mAuth.signInWithEmailAndPassword(correo, pass)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        //Obtener el UID del usuario que acaba de entrar
                         String uid = mAuth.getCurrentUser().getUid();
 
-                        // Consultar su rol en la Realtime Database
+                        // Consulta el rol del usuario en la Realtime Database
                         mDatabase.child("Usuarios").child(uid).get().addOnCompleteListener(dbTask -> {
                             if (dbTask.isSuccessful()) {
-                                // Extraemos el valor de esPrincipal (tu clase Usuario)
+                                // esPrincipal: true = cuidador, false = adulto mayor
                                 Boolean esCuidador = dbTask.getResult().child("esPrincipal").getValue(Boolean.class);
 
                                 Intent intent;
                                 if (esCuidador != null && esCuidador) {
-                                    // Es Cuidador / Familiar
                                     intent = new Intent(LoginActivity.this, MainFamiliarActivity.class);
                                 } else {
-                                    // Es Adulto Mayor
                                     intent = new Intent(LoginActivity.this, MainAdultoActivity.class);
                                 }
 
                                 startActivity(intent);
-                                finish(); // Cerramos el Login para que no puedan regresar con el botón atrás
+                                finish(); // evita volver al login con el botón atrás
                             } else {
                                 Toast.makeText(LoginActivity.this, "Error al obtener perfil", Toast.LENGTH_SHORT).show();
                             }
@@ -112,34 +117,33 @@ public class LoginActivity extends AppCompatActivity {
 
     protected void onStart() {
         super.onStart();
-        // Revisamos si ya hay un usuario logueado en este celular
+        // Si ya hay una sesión activa, redirige sin volver a pedir credenciales
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
-            // Si existe, lo mandamos directo a su pantalla según su rol
             verificarRolYRedirigir(user.getUid());
         }
     }
 
+    /**
+     * Consulta el rol del usuario en Firebase y lo redirige a la pantalla
+     * principal correspondiente.
+     */
     private void verificarRolYRedirigir(String uid) {
-        // Vamos a la rama "Usuarios" y buscamos el ID del usuario actual
         mDatabase.child("Usuarios").child(uid).get().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult().exists()) {
-                // Sacamos el valor de "esPrincipal" (Cuidador = true, Abuelo = false)
+                // esPrincipal: true = cuidador, false = adulto mayor
                 Boolean esCuidador = task.getResult().child("esPrincipal").getValue(Boolean.class);
 
                 Intent intent;
                 if (esCuidador != null && esCuidador) {
-                    // Si es true, va a la pantalla del Familiar
                     intent = new Intent(LoginActivity.this, MainFamiliarActivity.class);
                 } else {
-                    // Si es false, va a la pantalla del Adulto Mayor
                     intent = new Intent(LoginActivity.this, MainAdultoActivity.class);
                 }
 
                 startActivity(intent);
-                finish(); // Importante para que no regrese al login al darle "atrás"
+                finish(); // evita volver al login con el botón atrás
             } else {
-                // Si por algo no hay datos en la DB, lo dejamos en el Login
                 Toast.makeText(this, "Error al recuperar perfil del usuario", Toast.LENGTH_SHORT).show();
             }
         });
